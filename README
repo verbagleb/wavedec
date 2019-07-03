@@ -1,0 +1,22 @@
+Крайняя версия программы, реализующей функционал тестирования ДВП и внутрикадроовго предсказания
+Параметры сборки можно найти в Makefile
+
+Сборка:
+./makevar [номер исполняемого файла]
+
+Чистка:
+./makevar clean
+
+Параметры:
+config[_n].cfg - информация о фильтрах и параметры внутрикадрового предсказания
+intra_config[_n].cfg - сетка параметров моделирования
+
+Единичный запуск:
+wavedec file_name filter_index block_size pred_mode quant_factor [config_name [log_dir_name]]
+filter_index согласно порядку указания в config, нумерация с 0
+
+Серийный запуск:
+./intra_pred [ n_intra_config [ n_dir [ n exec ] ] ]
+n_intra_config - номер файла intra_config_(n_intra_config).cfg с сеткой параметров моделирования (если не указан, используется intra_config.cfg)
+n_dir - номер папки логов log/log_(n_dir)/
+n_exec - запускается файл ./wavedec_(n_exec)
