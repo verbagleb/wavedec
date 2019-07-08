@@ -1068,7 +1068,7 @@ short * decTree::getSubCoef(double extension, component comp, int filenum, int *
 			//subCoeff[i + j * iWidth] = (short)Limiting_a_b( d>delta/2 ? floor((d-delta/2)*extension)+1 : 
 			//		d<-delta/2 ? ceil((d+delta/2)*extension)-1 : 0, SHRT_MIN, SHRT_MAX);
 			if (subCoeff[i + j * iWidth]==SHRT_MAX || subCoeff[i + j * iWidth]==SHRT_MIN)
-				cout << "Clipping !" << endl;
+				cout << "Get : " << char_comp << " clipping !" << endl;
 			#ifdef PRINT_TEST_FILES
 			//fprintf(fileSub, "%d ", subCoeff[i + j * iWidth]);
 			fprintf(fileSub, "%f ", d);
@@ -1416,7 +1416,7 @@ void decTree::setSubCoef(short * subCoeff, double extension, component comp, int
 			//dBand[i + j*iWidth] = s>0 ? (double)s*eps+(delta/2-eps/2) :
 			//	s<0 ? (double)s*eps-(delta/2-eps/2): 0.0;
 			if (subCoeff[i + j * iWidth]==SHRT_MAX || subCoeff[i + j * iWidth]==SHRT_MIN)
-				cout << "Clipping !" << endl;
+				cout << "Set : " << char_comp << " clipping !" << endl;
 			#ifdef PRINT_TEST_FILES
 			fprintf(fileSub, "%d ", subCoeff[i + j * iWidth]);
 			#endif

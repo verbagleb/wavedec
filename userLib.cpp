@@ -401,6 +401,8 @@ int formOutput(char * output_dir_name, const char * bitmap_name, double quantFac
 			cout << "Can't create a directory\n";
 			return 1;
 		}
+		cout << "Directory generated: " << output_dir_name << endl;
+
 		remove("output/output_last");
 		symlink(output_name, "output/output_last");
 
@@ -415,7 +417,6 @@ int formOutput(char * output_dir_name, const char * bitmap_name, double quantFac
 		fclose(dest);
 	}
 
-	cout << "Directory: " << output_dir_name << endl;
 	char log_short_name[128];
 
 	if (!log_short)
@@ -446,7 +447,7 @@ int formOutput(char * output_dir_name, const char * bitmap_name, double quantFac
 				cout << "Can't open a file for short log\n";
 				return 5;
 			}
-			fprintf(log_short[k],"bitmap_name\tqfactor");
+			fprintf(log_short[k],"bitmap_name\tqstep");
 #ifdef PRINT_SEPARATE_BANDS
 			for (int j=0; j<totalBands; j++)
 				fprintf(log_short[k],"\tEnt_%d",j);
@@ -462,7 +463,7 @@ int formOutput(char * output_dir_name, const char * bitmap_name, double quantFac
 			fprintf(log_short[k],"\tPSNR_Cr");
 			fprintf(log_short[k],"\tPSNR_Cb\n");
 		}
-		fprintf(log_short[k],"%s\t%.5f", bitmap_name, quantFactor);
+		fprintf(log_short[k],"%s\t%.2f", bitmap_name, 1/quantFactor);
 	}
 	return 0;
 }

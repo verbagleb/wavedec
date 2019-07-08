@@ -120,7 +120,7 @@ int main(
 		int xband=0;
 		int yband=0;
 		//double epsilon = 7.0;
-		//	pDecTree->analyseBandWH(&pFilter[filterIndex]);
+		pDecTree->analyseBandWH(&pFilter[0]);
 			//pDecTree->stepAt(xband,yband)->analyseBandWH(&pFilter[2]);
 		/*	pDecTree->analyseBandWH(&pFilter[0]);
 			pDecTree->stepAt(0,0)->analyseBandWH(&pFilter[0]);
@@ -140,9 +140,6 @@ int main(
 					pDecTree->stepAt(i,j)->setMult(commonMult);
 		*/
 
-		decTree * pDecTree_recon = new decTree;
-		pDecTree->copyTree(pDecTree_recon);
-
 		int totalBands = pDecTree->countBands();	//GV
 		FILE * log_short[1]; // array for separate components
 
@@ -151,6 +148,11 @@ int main(
 			double quantFactor = qf_array[qf_index];
 			if (formOutput(output_dir_name, bitmap_name, quantFactor, totalBands, log_short))
 				return -3;
+			cout << bitmap_name << " " << quantFactor << endl;
+
+			decTree * pDecTree_recon = new decTree;
+			pDecTree->copyTree(pDecTree_recon);
+
 			for (int compnum=0; compnum<3; compnum++)
 			{
 				component comp = (component) compnum;
@@ -273,6 +275,8 @@ int main(
 
 			for (int k=0; k<1; k++)
 				fclose(log_short[k]);
+
+			delete pDecTree_recon;
 		}
 
 		delete pImage_o;
