@@ -52,15 +52,15 @@ int main(
 	// reading config file
 	int iSubH = 0, iSubW = 0;		//subsampling
 	char ** images_array = nullptr;
-	double * qf_array = nullptr;
-	int images_number = 0, qf_number = 0;
+	double * qs_array = nullptr;
+	int images_number = 0, qs_number = 0;
 	cFilter *pFilter;
 	int nFilters;
 
 	readConfig(config_name, nFilters, pFilter);
 	for (int iFilter=0; iFilter<nFilters; iFilter++)
 		pFilter[iFilter].normalize();
-	readGrid(grid_name, iSubW, iSubH, images_array, images_number, qf_array, qf_number);
+	readGrid(grid_name, iSubW, iSubH, images_array, images_number, qs_array, qs_number);
 	/*if (filterIndex >= nFilters || filterIndex < 0)
 	{
 		cerr << "Filter index exceeds the limits. Set to 0\n";
@@ -143,12 +143,12 @@ int main(
 		int totalBands = pDecTree->countBands();	//GV
 		FILE * log_short[1]; // array for separate components
 
-		for (int qf_index = 0; qf_index < qf_number; qf_index++)
+		for (int qs_index = 0; qs_index < qs_number; qs_index++)
 		{
-			double quantFactor = qf_array[qf_index];
-			if (formOutput(output_dir_name, bitmap_name, quantFactor, totalBands, log_short))
+			double quantStep = qs_array[qs_index];
+			if (formOutput(output_dir_name, bitmap_name, quantStep, totalBands, log_short))
 				return -3;
-			cout << bitmap_name << " " << quantFactor << endl;
+			cout << bitmap_name << " " << quantStep << endl;
 
 			decTree * pDecTree_recon = new decTree;
 			pDecTree->copyTree(pDecTree_recon);
@@ -156,7 +156,7 @@ int main(
 			for (int compnum=0; compnum<3; compnum++)
 			{
 				component comp = (component) compnum;
-				double extension = quantFactor;
+				double extension = 1/quantStep;
 
 				short ** coeff_orig = new short *[totalBands];
 				int * sub_width = new int [totalBands];
@@ -211,7 +211,7 @@ int main(
 				sprintf(bands_dir, "%s/bands", output_dir_name);
 				mkdir(bands_dir, 0777);
 			   	sprintf(bands_name, "%s/%s_%.3f_bands.bmp", 
-						bands_dir, bitmap_name, 1/quantFactor);
+						bands_dir, bitmap_name, quantStep);
 				i = pOut->WriteToBitmapFile(bands_name);
 				if (i)
 					return 100 + i;
@@ -251,7 +251,7 @@ int main(
 				sprintf(restored_dir, "%s/restored", output_dir_name);
 				mkdir(restored_dir, 0777);
 			   	sprintf(restored_name, "%s/%s_%.3f.bmp", 
-						restored_dir, bitmap_name, 1/quantFactor);
+						restored_dir, bitmap_name, quantStep);
 				i = pOutR->WriteToBitmapFile(restored_name);
 				if (i)
 					return 100 + i;
@@ -262,7 +262,7 @@ int main(
 				sprintf(diff_dir, "%s/difference_x%.2f", output_dir_name, multdif);
 				mkdir(diff_dir, 0777);
 			   	sprintf(diff_name, "%s/%s_%.2f.bmp", 
-						diff_dir, bitmap_name, 1/quantFactor);
+						diff_dir, bitmap_name, quantStep);
 				i = pOutD->WriteToBitmapFile(diff_name);
 				if (i)
 					return 130 + i;
@@ -289,7 +289,7 @@ int main(
 	for (int i = 0; i < images_number; i++)
 		delete[] images_array[i];
 	delete[] images_array;
-	delete[] qf_array;
+	delete[] qs_array;
 	
 	return 0;
 }

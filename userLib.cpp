@@ -116,14 +116,14 @@ int readConfig(const char *config_name, int &nFilters, cFilter*& pFilter)
 int readGrid(const char * grid_name, 
 		int &subW, int &subH, 
 		char ** &images_array, int &images_number, 
-		double * &qf_array, int &qf_number)
+		double * &qs_array, int &qs_number)
 {
 	const int BUFFSIZE = 1000;
 	char str[BUFFSIZE];
 	
 	const int ARRAY_MAX = 100;
 	images_array = new char * [ARRAY_MAX];
-	qf_array = new double [ARRAY_MAX];
+	qs_array = new double [ARRAY_MAX];
 
 	int i, j, k;
 	int fl, temp;
@@ -155,11 +155,11 @@ int readGrid(const char * grid_name,
 
 	flg = fgets(str, BUFFSIZE, fp);
 	flg = fgets(str, BUFFSIZE, fp);
-	for (tok = strtok(str," \t\r\n"), qf_number = 0;
-		tok && qf_number < ARRAY_MAX;
-		tok = strtok(nullptr, " \t\r\n"), qf_number++)
-		qf_array[qf_number] = atof(tok);
-	if (tok && qf_number == ARRAY_MAX)
+	for (tok = strtok(str," \t\r\n"), qs_number = 0;
+		tok && qs_number < ARRAY_MAX;
+		tok = strtok(nullptr, " \t\r\n"), qs_number++)
+		qs_array[qs_number] = atof(tok);
+	if (tok && qs_number == ARRAY_MAX)
 		cerr << "The first " << ARRAY_MAX << " values for quant factor are loaded";
 
 	return 0;
@@ -381,7 +381,7 @@ void comp_psnr(double * error, int totalBands, FILE * log_short)
 	fprintf(log_short, "\n");
 }
 
-int formOutput(char * output_dir_name, const char * bitmap_name, double quantFactor, int totalBands, FILE ** log_short)
+int formOutput(char * output_dir_name, const char * bitmap_name, double quantStep, int totalBands, FILE ** log_short)
 {
 	mkdir("output", 0777); 	
 	
@@ -463,7 +463,7 @@ int formOutput(char * output_dir_name, const char * bitmap_name, double quantFac
 			fprintf(log_short[k],"\tPSNR_Cr");
 			fprintf(log_short[k],"\tPSNR_Cb\n");
 		}
-		fprintf(log_short[k],"%s\t%.2f", bitmap_name, 1/quantFactor);
+		fprintf(log_short[k],"%s\t%.2f", bitmap_name, quantStep);
 	}
 	return 0;
 }
