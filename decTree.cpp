@@ -21,7 +21,11 @@ decTree::decTree()
 decTree::~decTree() //recursively
 {
 	if (!isUndivided())
-		delete dBandY,dBandCr,dBandCb;
+	{
+		delete dBandY;
+		delete dBandCr;
+		delete dBandCb;
+	}
 	else if (!isEmpty())
 		delete[] step;
 }
@@ -319,7 +323,9 @@ int decTree::analyseBandW(cFilter *pFilter, bool ignoreMult)
 				step[iBand].dBandCr[iBWidthC*j+i]=sum;
 			}
 #endif
-		delete dBandYE, dBandCbE, dBandCrE;
+		delete dBandYE;
+		delete dBandCbE;
+		delete dBandCrE;
 		if ((nBands > 2) || (!pFilter->bOdd))
 			sgn *= -1;
 		shift = (shift + pFilter->iAlternateShift) % nBands;
@@ -329,7 +335,9 @@ int decTree::analyseBandW(cFilter *pFilter, bool ignoreMult)
 	iNumH = 1;
 	iNumW = nBands;
 	this->pFilter = pFilter;
-	delete dBandY,dBandCr,dBandCb;
+	delete dBandY;
+	delete dBandCr;
+	delete dBandCb;
 	dBandY = dBandCr = dBandCb = nullptr;
 	return 0;
 }
@@ -445,7 +453,9 @@ int decTree::analyseBandH(cFilter *pFilter, bool ignoreMult)
 				step[iBand].dBandCr[iBWidthC*j+i]=sum;
 			}
 #endif
-		delete dBandYE, dBandCbE, dBandCrE;
+		delete dBandYE;
+		delete dBandCbE;
+		delete dBandCrE;
 		if ((nBands > 2) || (!pFilter->bOdd))
 			sgn *= -1;
 		shift = (shift + pFilter->iAlternateShift) % nBands;
@@ -455,7 +465,9 @@ int decTree::analyseBandH(cFilter *pFilter, bool ignoreMult)
 	iNumH = nBands;
 	iNumW = 1;
 	this->pFilter = pFilter;
-	delete dBandY,dBandCr,dBandCb;
+	delete dBandY;
+	delete dBandCr;
+	delete dBandCb;
 	dBandY = dBandCr = dBandCb = nullptr;
 	return 0;
 }
@@ -762,7 +774,9 @@ int decTree::synthesizeBandW()
 			if (nBands>2 || !pFilter->bOdd) 	//TODO
 				iSgn=-iSgn;
 			
-			delete[] dBandYSE, dBandCbSE, dBandCrSE;
+			delete[] dBandYSE;
+			delete[] dBandCbSE;
+			delete[] dBandCrSE;
 			delete pDTE;
 			}
 
@@ -927,7 +941,9 @@ int decTree::synthesizeBandH()
 			if (nBands>2 || !pFilter->bOdd) 	//TODO
 				iSgn=-iSgn;
 			
-			delete[] dBandYSE, dBandCbSE, dBandCrSE;
+			delete[] dBandYSE;
+		   	delete[] dBandCbSE;
+			delete[] dBandCrSE;
 			delete pDTE;
 			}
 
