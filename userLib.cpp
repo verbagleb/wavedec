@@ -238,7 +238,8 @@ void comp_entropy(short ** coeff_orig, short ** coeff_pred, int * coeff_pred_ln,
 			absDivide(coeff_orig[i], coeff_abs, coeff_sgn, size);
 			int sgnSize = suppressValue(coeff_sgn, size, 0, coeff_sgn_sup);
 			ent_sgn = entropy(coeff_sgn_sup, sgnSize);
-			delete [] coeff_sgn, coeff_sgn_sup;
+			delete [] coeff_sgn;
+			delete [] coeff_sgn_sup;
 		}
 		// ------------- //
 
@@ -308,7 +309,8 @@ void comp_entropy(short ** coeff_orig, short ** coeff_pred, int * coeff_pred_ln,
 				ent_sgn_s = entropy(coeff_sgn_sup, sgnSize)*sgnSize;
 			}
 
-			delete [] coeff_sgn, coeff_sgn_sup;
+			delete [] coeff_sgn;
+			delete [] coeff_sgn_sup;
 		}
 		// ------------- //
 		
@@ -605,7 +607,9 @@ double entropy(short * array, short * context, int size, short supVal)
 				ent_s += count[k][i] ? - (double)count[k][i] * log2((double)count[k][i] / count_cont[k]) : 0.0;
 	for (int k=low_c; k<high_c; k++)
 		delete[] count00[k-low_c];
-	delete[] count00, count0, count_cont0;
+	delete[] count00;
+	delete[] count0;
+	delete[] count_cont0;
 
 	return ent_s;
 }

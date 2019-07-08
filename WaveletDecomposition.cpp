@@ -201,7 +201,8 @@ int main(
 		if (i)
 			return 100 + i;
 
-		delete pImage_b, pOut;
+		delete pImage_b;
+		delete pOut;
 	}
 	#endif
 
@@ -403,9 +404,17 @@ int main(
 			*/			
 
 			for (int i = 0; i<totalBands; i++){
-				delete [] coeff_orig[i], coeff_pred[i], coeff_recon[i], ref_sampl[i], split_blocks[i], coeff_orig_abs[i], coeff_orig_sgn[i], coeff_recon_abs[i];
+				delete[] coeff_orig[i]; delete[] coeff_pred[i]; delete[] coeff_recon[i];
+				delete[] ref_sampl[i]; delete[] split_blocks[i]; 
+				delete[] coeff_orig_abs[i]; delete[] coeff_orig_sgn[i]; delete[] coeff_recon_abs[i];
 			}
-			delete[] coeff_orig, sub_width, sub_height, coeff_pred, coeff_recon, skipped_blocks, total_blocks, coeff_pred_ln, ref_sampl_ln, split_depth, split_ent, split_total, coeff_orig_abs, coeff_orig_sgn, coeff_recon_abs, pred_modes, skip_flags;
+			delete[] coeff_orig; delete[] sub_width; delete[] sub_height; 
+			delete[] coeff_pred; delete[] coeff_recon; 
+			delete[] skipped_blocks; delete[] total_blocks; 
+			delete[] coeff_pred_ln; delete[] ref_sampl_ln;
+		   	delete[] split_depth; delete[] split_ent; delete[] split_total; 
+			delete[] coeff_orig_abs; delete[] coeff_orig_sgn; delete[] coeff_recon_abs;
+			delete[] pred_modes; delete[] skip_flags;
 			#ifdef BAND_IMAGE_OUTPUT
 			for (int k=0; k<totalBands; k++)
 			       delete[] conc_pred_data[k];
@@ -508,7 +517,10 @@ int main(
 					char fname[64];
 					sprintf(fname,"output/Band_%d.bmp",numH*k+l+1);
 					pOut_comp->WriteToBitmapFile(fname);
-					delete pOut_comp, pImage_r_p, pImage_p_p, pImage_d_p;
+					delete pOut_comp;
+					delete pImage_r_p;
+				   	delete pImage_p_p;
+					delete pImage_d_p;
 				}
 			delete pImage_comp;
 
@@ -531,11 +543,12 @@ int main(
 					i = pOut_wb->WriteToBitmapFile(fname);
 					if (i)
 						return 13;
-					delete pImage_wb, pOut_wb;
+					delete pImage_wb;
+					delete pOut_wb;
 				}
-			delete pImage_r, pImage_p, pImage_d,
-			       pOut_r, pOut_p, pOut_d,
-			       pDecTree_d;
+			delete pImage_r; delete pImage_p; delete pImage_d;
+			delete pOut_r; delete pOut_p; delete pOut_d;
+			delete pDecTree_d;
 		}
 		#endif
 
@@ -645,9 +658,12 @@ int main(
 				int sgnSize = suppressValue(coeff_sgn[k], sub_width_sgn[k]*sub_height_sgn[k], 0, coeff_sgn_sup);
 				double ent_sgn = entropy(coeff_sgn_sup, sgnSize);
 				fprintf(log_short[compnum], "\t%.3f\n", ent_sgn*sgnSize);
-				delete [] coeff_sgn[k], coeff_sgn_sup;
+				delete [] coeff_sgn[k];
+				delete [] coeff_sgn_sup;
 			}
-			delete [] coeff_sgn, sub_width_sgn, sub_height_sgn;
+			delete [] coeff_sgn;
+			delete [] sub_width_sgn;
+		   	delete [] sub_height_sgn;
 			// */
 		}
 	}
@@ -691,21 +707,29 @@ int main(
 		i = pOutD->WriteToBitmapFile(diffname);
 		if (i)
 			return 130 + i;
-		delete pImage_r, pDiff, pOutR, pOutD;
+		delete pImage_r;
+	   	delete pDiff;
+	   	delete pOutR;
+		delete pOutD;
 	}
 	#endif
 
-	delete pDT_pred, pDT_recon;	
+	delete pDT_pred;
+	delete pDT_recon;	
 
 	fclose(log);
 
 	for (int k=0; k<3; k++)
 		fclose(log_short[k]);
 
-	delete pImage_o, pFilter; 
+	delete pImage_o;
+	delete pFilter; 
 	delete pDecTree; //, pDecTree_pt_sgn;
 	if (bRestriction)
-		delete pDecTree_recon, pDecTree_pred;
+	{
+		delete pDecTree_recon;
+		delete pDecTree_pred;
+	}
 	
 	return 0;
 }
