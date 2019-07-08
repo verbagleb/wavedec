@@ -31,7 +31,7 @@ public:
 	void setpRGB(unsigned char * val);
 
 public:
-	int CreateFromBitmapFile(char * filename, int *picWidth = NULL, int *picHeight = NULL);
+	int CreateFromBitmapFile(const char * filename, int *picWidth = NULL, int *picHeight = NULL);
 	cImageYCbCr* CreateYCrCb420FromRGB(int iSubW = 1, int iSubH = 1);
 public:
 	static int YFromRGB(int iR, int iG, int iB);

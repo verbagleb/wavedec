@@ -5,7 +5,6 @@
 #include "cImageYCbCr.h"
 #include "userLib.h"
 #include "cFilter.h"
-#include "intra.h"
 #include "math.h"
 
 class decTree

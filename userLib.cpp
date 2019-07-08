@@ -2,12 +2,15 @@
 
 using namespace std;
 
-extern bool bError;
-extern bool bModes;
-extern bool bReferenceSamples;
-extern bool bSplitFlags;
-extern bool bSigns;
-extern bool bSkipFlags;
+// Deprecated --------------
+bool bError = false;
+bool bModes = false;
+bool bReferenceSamples = false;
+bool bSplitFlags = false;
+bool bSigns = false;
+bool bSkipFlags = false;
+// --------------------------
+
 extern bool bContext;		// defines whether the entropy uses context
 
 int ceilTo(int number, int base, int remainder)
@@ -15,10 +18,10 @@ int ceilTo(int number, int base, int remainder)
 	return (number + base - 1 - remainder) / base*base + remainder;
 }
 
-int readConfig(const char *config_name, int &bAllowSkipPred, int &bSplit, int &bFiltering, int &bAbsDivision, int &predScheme, int &iSubH, int &iSubW, int &nFilters, cFilter*& pFilter)
+int readConfig(const char *config_name, int &nFilters, cFilter*& pFilter)
 {
-	char Str[1000];
-	double dCoeffs[1000];
+	const int BUFFSIZE = 1000;
+	char str[BUFFSIZE];
 	
 	int i, j, k;
 	int fl, temp;
@@ -26,31 +29,13 @@ int readConfig(const char *config_name, int &bAllowSkipPred, int &bSplit, int &b
 	FILE * fp = fopen(config_name, "rt");
 	if (!fp)
 	{
-		printf("Error reading config file %s !\n", config_name);
+		printf("Error reading filter config file %s !\n", config_name);
 		return 1;
 	}
-	fgets(Str, 1000, fp);
-	fl = fscanf(fp, "%i", &bAllowSkipPred);
-	flg = fgets(Str, 1000, fp);
-	flg = fgets(Str, 1000, fp);
-	fl = fscanf(fp, "%i", &bSplit);
-	flg = fgets(Str, 1000, fp);
-	flg = fgets(Str, 1000, fp);
-	fl = fscanf(fp, "%i", &bFiltering);
-	flg = fgets(Str, 1000, fp);
-	flg = fgets(Str, 1000, fp);
-	fl = fscanf(fp, "%i", &bAbsDivision);
-	flg = fgets(Str, 1000, fp);
-	flg = fgets(Str, 1000, fp);
-	fl = fscanf(fp, "%i", &predScheme);
-	flg = fgets(Str, 1000, fp);
-	flg = fgets(Str, 1000, fp);
-	fl = fscanf(fp, "%i %i", &iSubW, &iSubH);
-	flg = fgets(Str, 1000, fp);
-	flg = fgets(Str, 1000, fp);
+	fgets(str, BUFFSIZE, fp);
 	fl = fscanf(fp, "%i", &nFilters);
-	flg = fgets(Str, 1000, fp);
-	flg = fgets(Str, 1000, fp);
+	flg = fgets(str, BUFFSIZE, fp);
+	flg = fgets(str, BUFFSIZE, fp);
 
 	pFilter = new cFilter[nFilters];
 	for (int iFilter=0; iFilter<nFilters; iFilter++)
@@ -58,11 +43,11 @@ int readConfig(const char *config_name, int &bAllowSkipPred, int &bSplit, int &b
 		char *sFN = new char[128];
 		flg = fgets(sFN, 128, fp);
 		pFilter[iFilter].sFilterName = strtok(sFN, "\r\n");
-		flg = fgets(Str, 1000, fp);
+		flg = fgets(str, BUFFSIZE, fp);
 		fl = fscanf(fp, "%i", &(pFilter[iFilter].iNumBands));
 		int iNumBands = pFilter[iFilter].iNumBands;
-		flg = fgets(Str, 1000, fp);
-		flg = fgets(Str, 1000, fp);
+		flg = fgets(str, BUFFSIZE, fp);
+		flg = fgets(str, BUFFSIZE, fp);
 		
 		pFilter[iFilter].mult = new double[iNumBands];
 		//add = new int[iNumBands*iNumBands];
@@ -72,16 +57,16 @@ int readConfig(const char *config_name, int &bAllowSkipPred, int &bSplit, int &b
 		int iEvenOdd;
 		fscanf(fp, "%i", &iEvenOdd);
 		pFilter[iFilter].bOdd = (iEvenOdd==1);
-		fgets(Str, 1000, fp);
-		fgets(Str, 1000, fp);
+		fgets(str, BUFFSIZE, fp);
+		fgets(str, BUFFSIZE, fp);
 		for (i = 0; i < iNumBands; i++)
 			fscanf(fp, "%lf", pFilter[iFilter].mult + i);
-		//fgets(Str, 1000, fp);
-		//fgets(Str, 1000, fp);
+		//fgets(str, BUFFSIZE, fp);
+		//fgets(str, BUFFSIZE, fp);
 		//for (i = 0; i < iNumBands*iNumBands; i++)
 		//	fscanf(fp, "%i", add + i);
-		fgets(Str, 1000, fp);
-		fgets(Str, 1000, fp);
+		fgets(str, BUFFSIZE, fp);
+		fgets(str, BUFFSIZE, fp);
 
 		pFilter[iFilter].pDFilters = new double*[iNumBands];
 		pFilter[iFilter].pIFilters = new double*[iNumBands];
@@ -97,9 +82,9 @@ int readConfig(const char *config_name, int &bAllowSkipPred, int &bSplit, int &b
 			pFilter[iFilter].pDFilters[i] = new double [iNum];
 			for (j = 0; j < iNum; j++)
 				fscanf(fp, "%lf", pFilter[iFilter].pDFilters[i]+j);
-			fgets(Str, 1000, fp);
+			fgets(str, BUFFSIZE, fp);
 		}
-		fgets(Str, 1000, fp);
+		fgets(str, BUFFSIZE, fp);
 		for (i = 0; i < iNumBands; i++)
 		{
 			int iNum;
@@ -111,9 +96,9 @@ int readConfig(const char *config_name, int &bAllowSkipPred, int &bSplit, int &b
 			pFilter[iFilter].pIFilters[i] = new double [iNum];
 			for (j = 0; j < iNum; j++)
 				fscanf(fp, "%lf", pFilter[iFilter].pIFilters[i]+j);
-			fgets(Str, 1000, fp);
+			fgets(str, BUFFSIZE, fp);
 		}
-		fgets(Str, 1000, fp);
+		fgets(str, BUFFSIZE, fp);
 		/**/
 		pFilter[iFilter].iRemainder = iEvenOdd;		//add 1 pixel if mirror odd
 		pFilter[iFilter].iAlternateShift =  (iNumBands == 2 && iEvenOdd);	//antiphase
@@ -122,9 +107,61 @@ int readConfig(const char *config_name, int &bAllowSkipPred, int &bSplit, int &b
 	fclose(fp);
 
 	cout << "Read " << nFilters << " filters:" << endl;
-	for (int iFilter;iFilter<nFilters;iFilter++)
+	for (int iFilter=0;iFilter<nFilters;iFilter++)
 		cout << iFilter << ": " << pFilter[iFilter].iNumBands << " bands: " << 
 			pFilter[iFilter].sFilterName << endl;
+	return 0;
+}
+
+int readGrid(const char * grid_name, 
+		int &subW, int &subH, 
+		char ** &images_array, int &images_number, 
+		double * &qf_array, int &qf_number)
+{
+	const int BUFFSIZE = 1000;
+	char str[BUFFSIZE];
+	
+	const int ARRAY_MAX = 100;
+	images_array = new char * [ARRAY_MAX];
+	qf_array = new double [ARRAY_MAX];
+
+	int i, j, k;
+	int fl, temp;
+	char *flg;
+	char * tok;
+
+	FILE * fp = fopen(grid_name, "rt");
+	if (!fp)
+	{
+		printf("Error reading grid config file %s !\n", grid_name);
+		return 1;
+	}
+
+	fgets(str, BUFFSIZE, fp);
+	fl = fscanf(fp, "%i %i", &subW, &subH);
+
+	flg = fgets(str, BUFFSIZE, fp);
+	flg = fgets(str, BUFFSIZE, fp);
+	flg = fgets(str, BUFFSIZE, fp);
+	for (tok = strtok(str," \t\r\n"), images_number = 0;
+		tok && images_number < ARRAY_MAX;
+		tok = strtok(nullptr, " \t\r\n"), images_number++)
+	{
+		images_array[images_number] = new char[strlen(tok)];
+		flg = strcpy(images_array[images_number], tok);
+	}
+	if (tok && images_number == ARRAY_MAX)
+		cerr << "The first " << ARRAY_MAX << " values for image name are loaded";
+
+	flg = fgets(str, BUFFSIZE, fp);
+	flg = fgets(str, BUFFSIZE, fp);
+	for (tok = strtok(str," \t\r\n"), qf_number = 0;
+		tok && qf_number < ARRAY_MAX;
+		tok = strtok(nullptr, " \t\r\n"), qf_number++)
+		qf_array[qf_number] = atof(tok);
+	if (tok && qf_number == ARRAY_MAX)
+		cerr << "The first " << ARRAY_MAX << " values for quant factor are loaded";
+
 	return 0;
 }
 
@@ -214,7 +251,7 @@ double entropy(short * array, int size)
 }
 
 //Now uses abs and sgn instead of orig when bAbsDivision==true 
-void comp_entropy(short ** coeff_orig, short ** coeff_pred, int * coeff_pred_ln, short ** ref_sampl, int * ref_sampl_ln, short ** coeff_recon, int * skip_blk, int * total_blk, int * sub_width, int * sub_height, short ** pred_modes, short ** skip_flags, int ** split_blocks, int * split_depth, int * split_total, double * split_ent, int blockSize, int totalBands, FILE *log, FILE *log_short)
+void comp_entropy(short ** coeff_orig, short ** coeff_pred, int * coeff_pred_ln, short ** ref_sampl, int * ref_sampl_ln, short ** coeff_recon, int * skip_blk, int * total_blk, int * sub_width, int * sub_height, short ** pred_modes, short ** skip_flags, int ** split_blocks, int * split_depth, int * split_total, double * split_ent, int blockSize, int totalBands, FILE *log_short)
 {
 	// Components of prediction entropy to add into sum in short log
 	// -- moved to global in WaveletDecomposition.cpp --
@@ -223,8 +260,6 @@ void comp_entropy(short ** coeff_orig, short ** coeff_pred, int * coeff_pred_ln,
 
 	double ent0_sum=0.0, ent0a_sum=0.0, ent1_sum=0.0, ent2_sum=0.0, ent_m_sum=0.0, ent1_ref_sum =0.0, ent_spl_sum = 0.0, ent_sgn_sum=0.0, ent_sf_sum=0.0;
 	double percentage_av=0.0;
-	fprintf(log, "\nEntropy for subband in bits/pixel:\n");
-	fprintf(log, "j\tOrig[j]\tPred[j]\tRfSp[j]\tSgn[j]\tRecn[j]\tSkip\t(skp/ttl)\n");
 	for (int i=0; i<totalBands; i++)
 	{
 		int size = sub_width[i]*sub_height[i];
@@ -238,7 +273,8 @@ void comp_entropy(short ** coeff_orig, short ** coeff_pred, int * coeff_pred_ln,
 			absDivide(coeff_orig[i], coeff_abs, coeff_sgn, size);
 			int sgnSize = suppressValue(coeff_sgn, size, 0, coeff_sgn_sup);
 			ent_sgn = entropy(coeff_sgn_sup, sgnSize);
-			delete [] coeff_sgn, coeff_sgn_sup;
+			delete [] coeff_sgn;
+		  	delete [] coeff_sgn_sup;
 		}
 		// ------------- //
 
@@ -250,45 +286,26 @@ void comp_entropy(short ** coeff_orig, short ** coeff_pred, int * coeff_pred_ln,
 		double ent1_ref = entropy(ref_sampl[i], ref_sampl_ln[i]);
 		double ent2 = entropy(coeff_recon[i], size);
  		double percentage = (double)skip_blk[i] / (double)total_blk[i] * 100.0;
-		fprintf(log,"%d\t%.5f\t%.5f\t%.5f\t%.5f\t%.5f\t%.2f%%\t(%d/%d)", i, 
-				bAbsDivision ? ent0a : ent0, 
-				ent1, ent1_ref, ent_sgn, ent2, 
-				percentage, skip_blk[i], total_blk[i]);
-		for (int t = 0; t < split_depth[i] + 1; t++) {
-			fprintf(log, " %dx%d num = %d;", blockSize >> t , blockSize >> t, split_blocks[i][t]);
-		}
-		fprintf(log, "\n");
 		delete [] coeff_abs;
 	}
 
-	fprintf(log, "\nEntropy of modes vector in bits/block:\n");
-	fprintf(log, "j\tMods[j]\n");
 	for (int i=0; i<totalBands; i++)
 	{
 		double ent_m = entropy(pred_modes[i], total_blk[i]);
-		fprintf(log,"%d\t%.5f\n", i, ent_m);
 		ent_m_sum += ent_m*total_blk[i];
 	}
 
-	fprintf(log, "\nEntropy of skip_flags in bits/block:\n");
-	fprintf(log, "j\tSkpFlg[j]\n");
 	for (int i=0; i<totalBands; i++)
 	{
 		double ent_sf = entropy(skip_flags[i], total_blk[i]);
-		fprintf(log,"%d\t%.5f\n", i, ent_sf);
 		ent_sf_sum += ent_sf*total_blk[i];
 	}
 
-	fprintf(log, "\nEntropy of split_flags in bits/flag:\n");
-	fprintf(log, "j\tSplFlg[j]\n");
 	for (int i=0; i<totalBands; i++)
 	{
-		fprintf(log,"%d\t%.5f\n", i, split_ent[i]);
 		ent_spl_sum += split_ent[i]*split_total[i];
 	}
 
-	fprintf(log, "\nEntropy for the whole subband in bits:\n");
-	fprintf(log, "j\tOrig[j]\tPred[j]\t(Error\t+Modes\t+SkpFlg\t+RfSp\t+SplFlg\t+Sgn)\tRecn[j]\tSkip\t(skp/ttl)\n");
 	for (int i=0; i<totalBands; i++)
 	{
 		int size = sub_width[i]*sub_height[i];
@@ -308,7 +325,8 @@ void comp_entropy(short ** coeff_orig, short ** coeff_pred, int * coeff_pred_ln,
 				ent_sgn_s = entropy(coeff_sgn_sup, sgnSize)*sgnSize;
 			}
 
-			delete [] coeff_sgn, coeff_sgn_sup;
+			delete [] coeff_sgn;
+			delete [] coeff_sgn_sup;
 		}
 		// ------------- //
 		
@@ -336,16 +354,6 @@ void comp_entropy(short ** coeff_orig, short ** coeff_pred, int * coeff_pred_ln,
 		double ent_sfs = entropy(skip_flags[i], total_blk[i])*total_blk[i];
 		double ent_sp = split_ent[i]*split_total[i];
 
-		fprintf(log,"%d\t%.f\t%.f\t%.f\t%.f\t%.f\t%.f\t%.f\t%.f\t%.f\t%.2f%%\t(%d/%d)", i, 
-				bAbsDivision ? ent0as+ent_sgn_s : ent0s, 
-				ent1s+ent_ms+ent1s_ref+ent_sp+ent_sgn_s, 
-				ent1s, ent_ms, ent_sfs, ent1s_ref, ent_sp, ent_sgn_s, 
-				ent2s, percentage, skip_blk[i], total_blk[i]);
-		for (int t = 0; t < split_depth[i] + 1; t++) {
-			fprintf(log, " %dx%d num = %d;", blockSize >> t , blockSize >> t, split_blocks[i][t]);
-
-		}
-		fprintf(log, "\n");
 		delete [] coeff_abs;
 
 		ent0_sum += ent0s;
@@ -361,13 +369,6 @@ void comp_entropy(short ** coeff_orig, short ** coeff_pred, int * coeff_pred_ln,
 				bError*ent1s+bModes*ent_ms+bSkipFlags*ent_sfs+bReferenceSamples*ent1s_ref+bSplitFlags*ent_sp+bSigns*ent_sgn_s);
 	}
 
-	fprintf(log, "\nTotal entropy for the frame in bits:\n");
-	fprintf(log, "Orig_s\tPred_s\t(Error\t+Modes\t+SkpFl\t+RfSp\t+SplFlg\t+Sgn)\tRecon_s\tPerc_av:\n");
-	fprintf(log, "%.f\t%.f\t%.f\t%.f\t%.f\t%.f\t%.f\t%.f\t%.f\t%.2f%%\n\n", 
-			bAbsDivision ? ent0a_sum + ent_sgn_sum : ent0_sum, 
-			ent1_sum+ent_m_sum+ent_sf_sum+ent1_ref_sum+ent_spl_sum+ent_sgn_sum, 
-			ent1_sum, ent_m_sum, ent_sf_sum, ent1_ref_sum, ent_spl_sum, ent_sgn_sum, ent2_sum, 
-			percentage_av);
 	fprintf(log_short,"%.f\t%.f", 
 			bAbsDivision ? ent0a_sum + bSigns*ent_sgn_sum : ent0_sum, 
 			bError*ent1_sum+bModes*ent_m_sum+bSkipFlags*ent_sf_sum+bReferenceSamples*ent1_ref_sum+bSplitFlags*ent_spl_sum+bSigns*ent_sgn_sum);
@@ -380,45 +381,52 @@ void comp_psnr(double * error, int totalBands, FILE * log_short)
 	fprintf(log_short, "\n");
 }
 
-int formOutput(char * dir_name, char * bitmap_name, int blockSize, int predMode, double quantFactor, int totalBands, FILE ** log_this, FILE ** log_short)
+int formOutput(char * output_dir_name, const char * bitmap_name, double quantFactor, int totalBands, FILE ** log_short)
 {
-	mkdir("output", 0777); 	//This one is for image output
-	mkdir("files", 0777); 	//This one is for file output
+	mkdir("output", 0777); 	
 	
 	const int NMAX=10000;
-	if (dir_name[0]=='\0')
+	if (output_dir_name[0]=='\0')
 	{
-		int n,flag;
+		char name[64], output_name[64];
+		int n, flag;
 		for (n=0, flag=-1; flag && n<NMAX; n++)
 		{
-			sprintf(dir_name, "log/log_%d", n);
-			flag = mkdir(dir_name, 0777);
+			sprintf(output_dir_name, "output/output_%d", n);
+			sprintf(output_name, "./output_%d", n);
+			flag = mkdir(output_dir_name, 0777);
 		}
 		if (n==NMAX)
 		{
 			cout << "Can't create a directory\n";
 			return 1;
 		}
+		remove("output/output_last");
+		symlink(output_name, "output/output_last");
+
+		char buf[BUFSIZ];
+		char parameters_name[128];
+		sprintf(parameters_name, "%s/parameters.cfg", output_dir_name);
+		FILE* source = fopen("parameters.cfg", "rb");
+		FILE* dest = fopen(parameters_name, "wb");
+		while (size_t size = fread(buf, 1, BUFSIZ, source)) 
+			fwrite(buf, 1, size, dest);
+		fclose(source);
+		fclose(dest);
 	}
 
-	cout << "Directory: " << dir_name << endl;
-	char log_name[128], log_short_name[128];
-	sprintf(log_name, "./%s/log_%s_%d_%d_%.2f.txt", dir_name, bitmap_name, blockSize, predMode, quantFactor);
-	*log_this = fopen(log_name, "w");
-	if (!*log_this)
-	{
-		cout << "Can't open a file for log of this set\n";
-		return 2;
-	}
+	cout << "Directory: " << output_dir_name << endl;
+	char log_short_name[128];
 
 	if (!log_short)
 	{
 		cout << "Null pointers to log arrays\n";
 		return 3;
 	}
-	for (int k=0; k<3; k++)
+	for (int k=0; k<1; k++)
 	{
-		sprintf(log_short_name, "./%s/%s_log_short.txt", dir_name, (k==0)?"Y":( (k==1)? "Cr": "Cb") );
+		//sprintf(log_short_name, "./%s/%s_log_short.txt", dir_name, (k==0)?"Y":( (k==1)? "Cr": "Cb") );
+		sprintf(log_short_name, "./%s/log_short.txt", output_dir_name);
 		log_short[k] = fopen(log_short_name, "r");
 		if (log_short[k])
 		{
@@ -438,15 +446,23 @@ int formOutput(char * dir_name, char * bitmap_name, int blockSize, int predMode,
 				cout << "Can't open a file for short log\n";
 				return 5;
 			}
-			fprintf(log_short[k],"bitmap_name\tsize\tmode\tqfactor");
+			fprintf(log_short[k],"bitmap_name\tqfactor");
+#ifdef PRINT_SEPARATE_BANDS
 			for (int j=0; j<totalBands; j++)
-				fprintf(log_short[k],"\tOr_%d\tPr_%d",j,j);
-			fprintf(log_short[k],"\tOr_S\tPr_S");
+				fprintf(log_short[k],"\tEnt_%d",j);
+#endif
+			fprintf(log_short[k],"\tEnt_Y");
+			fprintf(log_short[k],"\tEnt_Cr");
+			fprintf(log_short[k],"\tEnt_Cb");
+#ifdef PRINT_SEPARATE_BANDS
 			for (int j=0; j<totalBands; j++)
 				fprintf(log_short[k],"\tPSNR_%d",j);
-			fprintf(log_short[k],"\tExtra\n");
+#endif
+			fprintf(log_short[k],"\tPSNR_Y");
+			fprintf(log_short[k],"\tPSNR_Cr");
+			fprintf(log_short[k],"\tPSNR_Cb\n");
 		}
-		fprintf(log_short[k],"%s\t%d\t%d\t%.5f\t", bitmap_name, blockSize, predMode, quantFactor);
+		fprintf(log_short[k],"%s\t%.5f", bitmap_name, quantFactor);
 	}
 	return 0;
 }
@@ -605,7 +621,9 @@ double entropy(short * array, short * context, int size, short supVal)
 				ent_s += count[k][i] ? - (double)count[k][i] * log2((double)count[k][i] / count_cont[k]) : 0.0;
 	for (int k=low_c; k<high_c; k++)
 		delete[] count00[k-low_c];
-	delete[] count00, count0, count_cont0;
+	delete[] count00;
+	delete[] count0;
+	delete[] count_cont0;
 
 	return ent_s;
 }
@@ -634,3 +652,5 @@ int getSign(int num)
 {
 	return num>0 ? 1: (num==0 ? 0: -1);
 }
+
+

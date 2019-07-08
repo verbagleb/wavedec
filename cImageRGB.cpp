@@ -53,7 +53,7 @@ void cImageRGB::setpRGB(unsigned char * val)
 	pRGB = val;
 }
 
-int cImageRGB::CreateFromBitmapFile(char * filename, int *picWidth, int *picHeight)
+int cImageRGB::CreateFromBitmapFile(const char * filename, int *picWidth, int *picHeight)
 {
 	int i;
 	FILE * fp;
