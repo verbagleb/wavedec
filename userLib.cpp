@@ -116,7 +116,8 @@ int readConfig(const char *config_name, int &nFilters, cFilter*& pFilter)
 int readGrid(const char * grid_name, 
 		int &subW, int &subH, 
 		char ** &images_array, int &images_number, 
-		double * &qs_array, int &qs_number)
+		double * &qs_array, int &qs_number,
+		char ** &cline_array, int &cline_number)
 {
 	const int BUFFSIZE = 1000;
 	char str[BUFFSIZE];
@@ -124,6 +125,7 @@ int readGrid(const char * grid_name,
 	const int ARRAY_MAX = 100;
 	images_array = new char * [ARRAY_MAX];
 	qs_array = new double [ARRAY_MAX];
+	cline_array = new char * [ARRAY_MAX];
 
 	int i, j, k;
 	int fl, temp;
@@ -147,7 +149,7 @@ int readGrid(const char * grid_name,
 		tok && images_number < ARRAY_MAX;
 		tok = strtok(nullptr, " \t\r\n"), images_number++)
 	{
-		images_array[images_number] = new char[strlen(tok)];
+		images_array[images_number] = new char[strlen(tok)+1];
 		flg = strcpy(images_array[images_number], tok);
 	}
 	if (tok && images_number == ARRAY_MAX)
@@ -161,6 +163,16 @@ int readGrid(const char * grid_name,
 		qs_array[qs_number] = atof(tok);
 	if (tok && qs_number == ARRAY_MAX)
 		cerr << "The first " << ARRAY_MAX << " values for quant factor are loaded";
+
+	flg = fgets(str, BUFFSIZE, fp);
+	for (flg = fgets(str, BUFFSIZE, fp), cline_number = 0;
+			flg;
+			flg = fgets(str, BUFFSIZE, fp), cline_number++)
+	{
+		siftString(str);
+		cline_array[cline_number] = new char[strlen(str)+1];
+		strcpy(cline_array[cline_number], str);
+	}
 
 	return 0;
 }
@@ -654,4 +666,14 @@ int getSign(int num)
 	return num>0 ? 1: (num==0 ? 0: -1);
 }
 
-
+void siftString(char * line)
+{
+	char * end = line + strlen(line);
+	char * dst = line;
+	for (char * src = line;
+			src < end;
+			src++)
+		if (*src == '(' || *src == ')' || (*src >= '0' && *src <= '9') || *src == ',')
+			*(dst++) = *src;
+	*dst = '\0';
+}

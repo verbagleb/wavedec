@@ -4,16 +4,26 @@
 //#include "stdafx.h"
 #include <stdio.h>
 #include <cstdio>
-#include "define.h"
 #include <math.h>
 #include <iostream>
 #include <fstream>
+#include <errno.h>
+#include <error.h>
 
+#include "define.h"
 #include "cImageRGB.h"
 #include "cImageYCbCr.h"
 #include "userLib.h"
 #include "decTree.h"
-#include "errno.h"
+				
+#define  INVSYNTAX do \
+	{ \
+	printf ("Invalid hierarchy syntax:\n\t%s\n\t",cline_array[cline_index]); \
+	for (char * p = cline_array[cline_index]; p < c; p++) \
+		printf(" "); \
+	printf("^\n"); \
+	return 6; } \
+	while(false)
 
 using namespace std;
 
@@ -51,21 +61,16 @@ int main(
 	
 	// reading config file
 	int iSubH = 0, iSubW = 0;		//subsampling
-	char ** images_array = nullptr;
+	char ** images_array = nullptr, ** cline_array = nullptr;
 	double * qs_array = nullptr;
-	int images_number = 0, qs_number = 0;
+	int images_number = 0, qs_number = 0, cline_number = 0;
 	cFilter *pFilter;
 	int nFilters;
 
 	readConfig(config_name, nFilters, pFilter);
 	for (int iFilter=0; iFilter<nFilters; iFilter++)
 		pFilter[iFilter].normalize();
-	readGrid(grid_name, iSubW, iSubH, images_array, images_number, qs_array, qs_number);
-	/*if (filterIndex >= nFilters || filterIndex < 0)
-	{
-		cerr << "Filter index exceeds the limits. Set to 0\n";
-		filterIndex = 0;
-	}*/
+	readGrid(grid_name, iSubW, iSubH, images_array, images_number, qs_array, qs_number, cline_array, cline_number);
 
 	for (int image_index=0; image_index < images_number; image_index++)
 	{
@@ -117,23 +122,68 @@ int main(
 		decTree * pDecTree_original = new decTree;
 		pDecTree->copyTree(pDecTree_original);
 
-		int xband=0;
-		int yband=0;
-		//double epsilon = 7.0;
-		pDecTree->analyseBandWH(&pFilter[0]);
-			//pDecTree->stepAt(xband,yband)->analyseBandWH(&pFilter[2]);
-		/*	pDecTree->analyseBandWH(&pFilter[0]);
-			pDecTree->stepAt(0,0)->analyseBandWH(&pFilter[0]);
-			pDecTree->stepAt(1,0)->analyseBandH(&pFilter[0], true);
-			pDecTree->stepAt(2,0)->analyseBandH(&pFilter[0], true);
-			pDecTree->stepAt(0,1)->analyseBandW(&pFilter[0], true);
-			pDecTree->stepAt(0,2)->analyseBandW(&pFilter[0], true);
-			pDecTree->stepAt(1,1)->analyseBandWH(&pFilter[2], true);
-			pDecTree->stepAt(2,1)->analyseBandH(&pFilter[2], true);
-			pDecTree->stepAt(1,2)->analyseBandW(&pFilter[2], true);
-			pDecTree->stepAt(2,2)->analyseBandWH(&pFilter[2], true);
-			pDecTree->stepAt(0,0)->stepAt(0,0)->analyseBandWH(&pFilter[0], false);
-		*/
+		for (int cline_index = 0; cline_index < cline_number; cline_index++)
+		{
+			char * c = cline_array[cline_index];
+			char * end = c + strlen(c);
+			char * aux;
+			decTree * pBand = pDecTree;
+			
+			if (c == end)
+				continue;
+
+			while (*c == '(') 
+			{
+				if (++c >= end)
+					INVSYNTAX;
+				int xBand = strtol(c,&aux,10);
+				if (!aux || aux == c || *aux != ',')
+					INVSYNTAX;
+				else
+					c = aux + 1;
+				int yBand = strtol(c,&aux,10);
+				if (!aux || aux == c || *aux != ')')
+					INVSYNTAX;
+				else
+					c = aux + 1;
+
+				pBand = pBand->stepAt(xBand, yBand);
+				if (!pBand)
+					error(7, 0, "No such band in decomposition");
+			}
+
+			int iFilter = strtol(c, &aux, 10);
+			if (!aux || aux == c || *aux != '(')
+				INVSYNTAX;
+			else 
+				c = aux + 1;
+			if (iFilter >= nFilters || iFilter < 0)
+				error(8, 0, "Filter index exceeds the limits");
+
+			bool byW, byH;
+			if (*c != '0' && *c != '1')
+				INVSYNTAX;
+			else 
+				byW = (*c == '1');
+			if (*++c != ',')
+				INVSYNTAX;
+			if (*++c != '0' && *c != '1')
+				INVSYNTAX;
+			else 
+				byH = (*c == '1');
+
+			if (*++c != ')' || *++c != '\0')
+				INVSYNTAX;
+
+			if (byW && byH)
+				pBand->analyseBandWH(pFilter+iFilter);
+			else if (byW)
+				pBand->analyseBandW(pFilter+iFilter);
+			else if (byH)
+				pBand->analyseBandH(pFilter+iFilter);
+			cout << cline_array[cline_index] << endl;
+		}
+
 		/*	double commonMult = 20.0;
 			for (int i=0; i<pDecTree->getNumH(); i++)
 				for (int j=!i; j<pDecTree->getNumW(); j++)
@@ -148,6 +198,27 @@ int main(
 			double quantStep = qs_array[qs_index];
 			if (formOutput(output_dir_name, bitmap_name, quantStep, totalBands, log_short))
 				return -3;
+
+			if (qs_index == 0)
+			{
+				double * energy = new double [totalBands];
+				for (int compnum = 0; compnum < 3; compnum++)
+				{
+					component comp = (component) compnum;
+					char energy_name[128];
+					sprintf(energy_name, "%s/energy_%s.txt", output_dir_name, comp_name[compnum]);
+					cout << energy_name << endl;
+					FILE * energy_log = fopen(energy_name, "a");
+					fprintf(energy_log, "%s", bitmap_name);
+					decTree::getAllEnergy(energy, pDecTree, comp);
+					for (int i=0; i<totalBands; i++)
+						fprintf(energy_log, "\t%.3f", energy[i]);
+					fprintf(energy_log, "\n");
+					fclose(energy_log);
+				}
+				delete[] energy;
+			}
+
 			cout << bitmap_name << " " << quantStep << endl;
 
 			decTree * pDecTree_recon = new decTree;
@@ -197,7 +268,7 @@ int main(
 
 #ifdef BAND_IMAGE_OUTPUT
 			{
-				cImageYCbCr * pImage_b=pDecTree->createImage(false);
+				cImageYCbCr * pImage_b=pDecTree_recon->createImage(false);
 				if (!pImage_b)
 					return 6;
 				pImage_b->setSubW(iSubW);
@@ -290,6 +361,9 @@ int main(
 		delete[] images_array[i];
 	delete[] images_array;
 	delete[] qs_array;
+	for (int i = 0; i < cline_number; i++)
+		delete[] cline_array[i];
+	delete[] cline_array;
 	
 	return 0;
 }

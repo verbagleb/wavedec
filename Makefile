@@ -1,6 +1,6 @@
 SOURCES_CPP=main.cpp cImageYCbCr.cpp cImageRGB.cpp decTree.cpp userLib.cpp cFilter.cpp
 SOURCES_C=
-FLAGS=-fpermissive -g -fdiagnostics-color=always \
+FLAGS=-g -fdiagnostics-color=always \
       -DBAND_IMAGE_OUTPUT \
       -DRESTORED_IMAGE_OUTPUT \
       # \

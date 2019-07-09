@@ -21,7 +21,8 @@ const char comp_name[3][3] = {"Y", "Cr", "Cb"};
 int ceilTo(int number, int base, int remainder);
 int readConfig(const char *config_name, int &nFilters, cFilter *& pFilter);
 int readGrid(const char * grid_name, int &subW, int &subH, 
-		char ** &images_array, int &images_number, double * &qs_array, int &qs_number);
+		char ** &images_array, int &images_number, double * &qs_array, int &qs_number,
+		char ** &cline_array, int &cline_number);
 int Limiting_a_b(double d, int a, int b);
 short lowest(short * array, int size);
 short highest(short * array, int size);
@@ -41,6 +42,7 @@ short * getContext(short * data, int width, int height);
 double entropy_cont(short * array, int width, int height, short supVal = SHRT_MAX);
 double entropy(short * array, short * context, int size, short supVal = SHRT_MAX);
 int getSign(int num);
+void siftString(char * line);
 // FFT //
 compd * fft(compd * array, int n);
 compd * ifft(compd * array, int n);
