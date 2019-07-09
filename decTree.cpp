@@ -1546,6 +1546,114 @@ int decTree::getAllPSNR(double * dest, decTree *pA, decTree *pB, component comp,
 	return ret;
 }
 
+double decTree::getSubEnergy(decTree *pA, component comp, bool bShift)
+{
+	if (pA->isEmpty() || !pA->isUndivided())
+		return -1.0;
+	double * dBandA;
+	int iHeight, iWidth;
+
+	switch (comp) {
+	case Cr:
+		iHeight = pA->iHeightC;
+		iWidth = pA->iWidthC;
+		dBandA = pA->dBandCr;
+		break;
+	case Cb:
+		iHeight = pA->iHeightC;
+		iWidth = pA->iWidthC;
+		dBandA = pA->dBandCb;
+		break;
+	case Y:
+	default:
+		iHeight = pA->iHeightY;
+		iWidth = pA->iWidthY;
+		dBandA = pA->dBandY;
+		break;
+	}
+
+	double mean=0.0, sum = 0.0, val;
+	int iSize = iHeight * iWidth;
+	for (int i=0; i<iSize; i++)
+	{
+		val = dBandA[i];
+		mean += val;
+	}
+	mean /= iSize;
+	for (int i=0; i<iSize; i++)
+	{
+		val = dBandA[i]-(bShift?mean:0.0);
+		sum += val*val;
+	}
+
+	return sum/iSize;
+}
+
+int decTree::getAllEnergy(double * dest, decTree *pA, component comp, int bandnum, bool bShift)
+{
+	if (!dest)
+		return -1;
+
+	if (pA->isEmpty())
+		return 0;
+
+	if (pA->isUndivided())
+	{
+		dest[bandnum]=getSubEnergy(pA, comp, bShift);
+		if (dest[bandnum]==-1.0)
+			return 0;
+		else
+			return 1;
+	}
+
+	int ret = 0;
+	for (int i=0; i<pA->iNumW; i++)
+		for (int j=0; j<pA->iNumH; j++)
+		{
+			int f = getAllEnergy(dest, pA->stepAt(i,j), comp, bandnum, bShift && !i && !j);
+			if (!f)
+				return 0; // some bands were empty
+					  // or non-consistent
+			ret += f;
+			bandnum += f;
+		}
+	return ret;
+}
+
+int decTree::getAllNames(char ** dest, decTree *pA, component comp, int bandnum, 
+		char * current_name)
+{
+	if (!dest)
+		return -1;
+
+	if (pA->isEmpty())
+		return 0;
+
+	if (pA->isUndivided())
+	{
+		dest[bandnum]=new char[128];
+		if (!dest[bandnum])
+			return 0;
+		sprintf(dest[bandnum],"%s",(current_name?current_name:""));
+		return 1;
+	}
+
+	int ret = 0;
+	for (int i=0; i<pA->iNumW; i++)
+		for (int j=0; j<pA->iNumH; j++)
+		{
+			char new_name[128];
+			sprintf(new_name, "%s(%d,%d)",(current_name?current_name:""),i,j);
+			int f = getAllNames(dest, pA->stepAt(i,j), comp, bandnum, new_name);
+			if (!f)
+				return 0; // some bands were empty
+					  // or non-consistent
+			ret += f;
+			bandnum += f;
+		}
+	return ret;
+}
+
 //Splits tree into abs and sign and places the latest 
 //into an object for return
 //elements with module no larger than epsilon are considered zeros
@@ -1647,4 +1755,9 @@ void decTree::substractTree_it(decTree * pSub)
 void decTree::setMult(double mult)
 {
 	this->mult = mult;
+}
+
+double decTree::getMult()
+{
+	return mult;
 }

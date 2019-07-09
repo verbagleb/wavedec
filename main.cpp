@@ -207,12 +207,50 @@ int main(
 					component comp = (component) compnum;
 					char energy_name[128];
 					sprintf(energy_name, "%s/energy_%s.txt", output_dir_name, comp_name[compnum]);
-					cout << energy_name << endl;
-					FILE * energy_log = fopen(energy_name, "a");
-					fprintf(energy_log, "%s", bitmap_name);
+					double energy_original = decTree::getSubEnergy(pDecTree_original, comp);
+
+					bool bExists;
+					FILE * energy_log = fopen(energy_name, "r");
+					if (!energy_log)
+						bExists = false;
+					else
+					{
+						bExists = true;
+						fclose(energy_log);
+					}
+
+					energy_log = fopen(energy_name, "a");
+
+					if (!bExists)
+					{
+						char ** band_names = new char* [totalBands];
+						decTree::getAllNames(band_names, pDecTree, comp);
+						fprintf(energy_log, "%25s","");
+						for (int i = 0; i < totalBands; i++)
+							//fprintf(energy_log, "%9s ",band_names[i]);
+							fprintf(energy_log, "\t%9s",band_names[i]);
+						fprintf(energy_log, "\n");
+
+						for (int i = 0; i < totalBands; i++)
+							delete[] band_names[i];
+						delete[] band_names;
+					}
+
+					fprintf(energy_log, "%19s (rms)", bitmap_name);
 					decTree::getAllEnergy(energy, pDecTree, comp);
+					double sum_sqrt = 0, sum = 0;
 					for (int i=0; i<totalBands; i++)
-						fprintf(energy_log, "\t%.3f", energy[i]);
+					{
+						sum_sqrt += sqrt(energy[i]/energy_original);
+						//fprintf(energy_log, "%10.5f", sqrt(energy[i]/energy_original));
+						fprintf(energy_log, "\t%10.5f", sqrt(energy[i]/energy_original));
+					}
+					fprintf(energy_log, "\n%20s (ms)","");
+					for (int i=0; i<totalBands; i++)
+					{
+						sum += (energy[i]/energy_original);
+						fprintf(energy_log, "\t%10.5f", energy[i]/energy_original);
+					}
 					fprintf(energy_log, "\n");
 					fclose(energy_log);
 				}
