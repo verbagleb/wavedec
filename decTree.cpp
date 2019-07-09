@@ -103,11 +103,11 @@ int decTree::loadImage(cImageYCbCr *pImage, bool bShift)
 	unsigned char * pCb0 = pImage->getPComp0(Cb);
 
 	for (int i=0; i<iSizeY; i++)
-		dBandY[i] = (double)pY0[i]-(bShift ? 128:0);
+		dBandY[i] = (double)pY0[i]-(bShift ? 127.5:0);
 	for (int i=0; i<iSizeC; i++)
-		dBandCr[i] = (double)pCr0[i]-(bShift ? 128:0);
+		dBandCr[i] = (double)pCr0[i]-(bShift ? 127.5:0);
 	for (int i=0; i<iSizeC; i++)
-		dBandCb[i] = (double)pCb0[i]-(bShift ? 128:0);
+		dBandCb[i] = (double)pCb0[i]-(bShift ? 127.5:0);
 	return 0;
 }
 
@@ -139,13 +139,13 @@ cImageYCbCr* decTree::createImage(bool bShift)
 	{
 		for (int i = 0; i<iSizeY; i++)
 			pY0[i]=Limiting_a_b(mult*dBandY[i] +
-					(bShift ? 128:0), 0, 255);
+					(bShift ? 127.5:0), 0, 255);
 		for (int i = 0; i<iSizeC; i++)
 			pCb0[i]=Limiting_a_b(mult*dBandCb[i] + 
-					(bShift ? 128:0), 0, 255);
+					(bShift ? 127.5:0), 0, 255);
 		for (int i = 0; i<iSizeC; i++)
 			pCr0[i]=Limiting_a_b(mult*dBandCr[i] +
-					(bShift ? 128:0), 0, 255);
+					(bShift ? 127.5:0), 0, 255);
 	}
 	else
 	{
