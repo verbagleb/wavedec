@@ -22,83 +22,79 @@ int readConfig(const char *config_name, int &nFilters, cFilter*& pFilter)
 {
 	const int BUFFSIZE = 1000;
 	char str[BUFFSIZE];
+	char err_message[128];
+	sprintf( err_message, "Error reading filter config file %s !\n", config_name);
 	
 	int i, j, k;
-	int fl, temp;
-	char *flg;
-	FILE * fp = fopen(config_name, "rt");
-	if (!fp)
-	{
-		printf("Error reading filter config file %s !\n", config_name);
-		return 1;
-	}
-	fgets(str, BUFFSIZE, fp);
-	fl = fscanf(fp, "%i", &nFilters);
-	flg = fgets(str, BUFFSIZE, fp);
-	flg = fgets(str, BUFFSIZE, fp);
+	FILE * fp = nullptr;
+	CHECK_NZERO( fp = fopen(config_name, "rt") );
+	CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
+
+	CHECK_VAL( fscanf(fp, "%i", &nFilters), 1);
+	CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
+	CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
 
 	pFilter = new cFilter[nFilters];
 	for (int iFilter=0; iFilter<nFilters; iFilter++)
 	{
 		char *sFN = new char[128];
-		flg = fgets(sFN, 128, fp);
+		CHECK_NZERO(sFN);
+		CHECK_NZERO( fgets(sFN, 128, fp) );
 		pFilter[iFilter].sFilterName = strtok(sFN, "\r\n");
-		flg = fgets(str, BUFFSIZE, fp);
-		fl = fscanf(fp, "%i", &(pFilter[iFilter].iNumBands));
+		CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
+		CHECK_VAL( fscanf(fp, "%i", &(pFilter[iFilter].iNumBands)), 1);
 		int iNumBands = pFilter[iFilter].iNumBands;
-		flg = fgets(str, BUFFSIZE, fp);
-		flg = fgets(str, BUFFSIZE, fp);
+
+		CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
+		CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
 		
-		pFilter[iFilter].mult = new double[iNumBands];
+		CHECK_NZERO( pFilter[iFilter].mult = new double[iNumBands] );
 		//add = new int[iNumBands*iNumBands];
-		pFilter[iFilter].pDFilterLength = new int[iNumBands];
-		pFilter[iFilter].pIFilterLength = new int[iNumBands];
+		CHECK_NZERO( pFilter[iFilter].pDFilterLength = new int[iNumBands] );
+		CHECK_NZERO( pFilter[iFilter].pIFilterLength = new int[iNumBands] );
 
 		int iEvenOdd;
-		fscanf(fp, "%i", &iEvenOdd);
+		CHECK_VAL( fscanf(fp, "%i", &iEvenOdd), 1);
 		pFilter[iFilter].bOdd = (iEvenOdd==1);
-		fgets(str, BUFFSIZE, fp);
-		fgets(str, BUFFSIZE, fp);
+		CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
+		CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
 		for (i = 0; i < iNumBands; i++)
-			fscanf(fp, "%lf", pFilter[iFilter].mult + i);
-		//fgets(str, BUFFSIZE, fp);
-		//fgets(str, BUFFSIZE, fp);
-		//for (i = 0; i < iNumBands*iNumBands; i++)
-		//	fscanf(fp, "%i", add + i);
-		fgets(str, BUFFSIZE, fp);
-		fgets(str, BUFFSIZE, fp);
+			CHECK_VAL( fscanf(fp, "%lf", pFilter[iFilter].mult + i), 1);
+		
+		CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
+		CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
 
-		pFilter[iFilter].pDFilters = new double*[iNumBands];
-		pFilter[iFilter].pIFilters = new double*[iNumBands];
+		CHECK_NZERO( pFilter[iFilter].pDFilters = new double*[iNumBands] );
+		CHECK_NZERO( pFilter[iFilter].pIFilters = new double*[iNumBands] );
 		pFilter[iFilter].iEnhanceValue = 0;
 		for (i = 0; i < iNumBands; i++)
 		{
 			int iNum;
-			fscanf(fp, "%i", &iNum);
+			CHECK_VAL( fscanf(fp, "%i", &iNum), 1);
 			pFilter[iFilter].pDFilterLength[i]=iNum;
 			if (iNum + 1 > 	pFilter[iFilter].iEnhanceValue)
 				pFilter[iFilter].iEnhanceValue = iNum + 1;
 
-			pFilter[iFilter].pDFilters[i] = new double [iNum];
+			CHECK_NZERO( pFilter[iFilter].pDFilters[i] = new double [iNum] );
 			for (j = 0; j < iNum; j++)
-				fscanf(fp, "%lf", pFilter[iFilter].pDFilters[i]+j);
-			fgets(str, BUFFSIZE, fp);
+				CHECK_VAL( fscanf(fp, "%lf", pFilter[iFilter].pDFilters[i]+j), 1);
+			CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
 		}
-		fgets(str, BUFFSIZE, fp);
+		CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
 		for (i = 0; i < iNumBands; i++)
 		{
 			int iNum;
-			fscanf(fp, "%i", &iNum);
+			CHECK_VAL( fscanf(fp, "%i", &iNum), 1 );
 			pFilter[iFilter].pIFilterLength[i]=iNum;
 			if (iNum + 1 > 	pFilter[iFilter].iEnhanceValue)
 				pFilter[iFilter].iEnhanceValue = iNum + 1;
 
 			pFilter[iFilter].pIFilters[i] = new double [iNum];
 			for (j = 0; j < iNum; j++)
-				fscanf(fp, "%lf", pFilter[iFilter].pIFilters[i]+j);
-			fgets(str, BUFFSIZE, fp);
+				CHECK_VAL( fscanf(fp, "%lf", pFilter[iFilter].pIFilters[i]+j), 1);
+			CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
 		}
-		fgets(str, BUFFSIZE, fp);
+		CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
 		/**/
 		pFilter[iFilter].iRemainder = iEvenOdd;		//add 1 pixel if mirror odd
 		pFilter[iFilter].iAlternateShift =  (iNumBands == 2 && iEvenOdd);	//antiphase
@@ -122,41 +118,38 @@ int readGrid(const char * grid_name,
 	const int BUFFSIZE = 1000;
 	char str[BUFFSIZE];
 	
+	char err_message[128];
+	sprintf( err_message, "Error reading filter config file %s !\n", grid_name);
+
 	const int ARRAY_MAX = 100;
-	images_array = new char * [ARRAY_MAX];
-	qs_array = new double [ARRAY_MAX];
-	cline_array = new char * [ARRAY_MAX];
+	CHECK_NZERO( images_array = new char * [ARRAY_MAX] );
+	CHECK_NZERO( qs_array = new double [ARRAY_MAX] );
+	CHECK_NZERO( cline_array = new char * [ARRAY_MAX] );
 
 	int i, j, k;
-	int fl, temp;
-	char *flg;
 	char * tok;
 
 	FILE * fp = fopen(grid_name, "rt");
-	if (!fp)
-	{
-		printf("Error reading grid config file %s !\n", grid_name);
-		return 1;
-	}
+	CHECK_NZERO(fp);
 
-	fgets(str, BUFFSIZE, fp);
-	fl = fscanf(fp, "%i %i", &subW, &subH);
+	CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
+	CHECK_VAL( fscanf(fp, "%i %i", &subW, &subH), 2);
 
-	flg = fgets(str, BUFFSIZE, fp);
-	flg = fgets(str, BUFFSIZE, fp);
-	flg = fgets(str, BUFFSIZE, fp);
+	CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
+	CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
+	CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
 	for (tok = strtok(str," \t\r\n"), images_number = 0;
 		tok && images_number < ARRAY_MAX;
 		tok = strtok(nullptr, " \t\r\n"), images_number++)
 	{
-		images_array[images_number] = new char[strlen(tok)+1];
-		flg = strcpy(images_array[images_number], tok);
+		CHECK_NZERO( images_array[images_number] = new char[strlen(tok)+1] );
+		strcpy(images_array[images_number], tok);
 	}
 	if (tok && images_number == ARRAY_MAX)
 		cerr << "The first " << ARRAY_MAX << " values for image name are loaded";
 
-	flg = fgets(str, BUFFSIZE, fp);
-	flg = fgets(str, BUFFSIZE, fp);
+	CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
+	CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
 	for (tok = strtok(str," \t\r\n"), qs_number = 0;
 		tok && qs_number < ARRAY_MAX;
 		tok = strtok(nullptr, " \t\r\n"), qs_number++)
@@ -164,13 +157,14 @@ int readGrid(const char * grid_name,
 	if (tok && qs_number == ARRAY_MAX)
 		cerr << "The first " << ARRAY_MAX << " values for quant factor are loaded";
 
-	flg = fgets(str, BUFFSIZE, fp);
+	CHECK_NZERO( fgets(str, BUFFSIZE, fp) );
+	char * flg;
 	for (flg = fgets(str, BUFFSIZE, fp), cline_number = 0;
 			flg;
 			flg = fgets(str, BUFFSIZE, fp), cline_number++)
 	{
 		siftString(str);
-		cline_array[cline_number] = new char[strlen(str)+1];
+		CHECK_NZERO( cline_array[cline_number] = new char[strlen(str)+1] );
 		strcpy(cline_array[cline_number], str);
 	}
 
@@ -415,16 +409,22 @@ int formOutput(char * output_dir_name, const char * bitmap_name, double quantSte
 		}
 		cout << "Directory generated: " << output_dir_name << endl;
 
-		remove("output/output_last");
-		symlink(output_name, "output/output_last");
+		if(		remove("output/output_last") )
+			error(2, errno, __func__);
+		if(		symlink(output_name, "output/output_last") )
+			error(3, errno, __func__);
 
+		// Making a copy of parametergs.cfg in the output dir
 		char buf[BUFSIZ];
 		char parameters_name[128];
 		sprintf(parameters_name, "%s/parameters.cfg", output_dir_name);
 		FILE* source = fopen("parameters.cfg", "rb");
 		FILE* dest = fopen(parameters_name, "wb");
+		if (!source || !dest)
+			error(4, errno, __func__);
 		while (size_t size = fread(buf, 1, BUFSIZ, source)) 
-			fwrite(buf, 1, size, dest);
+			if (fwrite(buf, 1, size, dest)!=size)
+				error(5, errno, __func__);
 		fclose(source);
 		fclose(dest);
 	}

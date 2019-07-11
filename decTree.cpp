@@ -219,6 +219,8 @@ int decTree::analyseBandW(cFilter *pFilter, bool ignoreMult)
 
 	int nBands = pFilter->iNumBands;
 	step = new decTree[nBands];
+	if (!step)
+		error(2, errno, __func__);
 	
 	/* analysis */
 	int iWidthCeiledY = ceilTo(iWidthY,nBands,pFilter->iRemainder);
@@ -254,6 +256,9 @@ int decTree::analyseBandW(cFilter *pFilter, bool ignoreMult)
 		step[iBand].dBandY = new double [iBSizeY];
 		step[iBand].dBandCb = new double [iBSizeC];
 		step[iBand].dBandCr = new double [iBSizeC];
+		if (!step[iBand].dBandY || !step[iBand].dBandCb || !step[iBand].dBandCr)
+			error(3, errno, __func__);
+
 		memset(step[iBand].dBandY, 0, iBSizeY*sizeof(double));
 		memset(step[iBand].dBandCb, 0, iBSizeC*sizeof(double));
 		memset(step[iBand].dBandCr, 0, iBSizeC*sizeof(double));
@@ -261,6 +266,8 @@ int decTree::analyseBandW(cFilter *pFilter, bool ignoreMult)
 		double *dBandYE = enhance(Y,true,pFilter->iEnhanceValue,pFilter->bOdd, 1, nBands, pFilter->iRemainder);
 		double *dBandCbE = enhance(Cb,true,pFilter->iEnhanceValue,pFilter->bOdd, 1, nBands, pFilter->iRemainder);
 		double *dBandCrE = enhance(Cr,true,pFilter->iEnhanceValue,pFilter->bOdd, 1, nBands, pFilter->iRemainder);
+		if (!dBandYE || !dBandCbE || !dBandCrE)
+			error(4, errno, __func__);
 		double sum, *p;
 		int iFWYE = iWidthCeiledY+2*pFilter->iEnhanceValue;
 		int iFWCE = iWidthCeiledC+2*pFilter->iEnhanceValue;
@@ -349,6 +356,8 @@ int decTree::analyseBandH(cFilter *pFilter, bool ignoreMult)
 
 	int nBands = pFilter->iNumBands;
 	step = new decTree[nBands];
+	if (!step)
+		error(2, errno, __func__);
 	
 	/* analysis */
 	int iWidthCeiledY = ceilTo(iWidthY,nBands,pFilter->iRemainder);
@@ -384,6 +393,9 @@ int decTree::analyseBandH(cFilter *pFilter, bool ignoreMult)
 		step[iBand].dBandY = new double [iBSizeY];
 		step[iBand].dBandCb = new double [iBSizeC];
 		step[iBand].dBandCr = new double [iBSizeC];
+		if (!step[iBand].dBandY || !step[iBand].dBandCb || !step[iBand].dBandCr)
+			error(3, errno, __func__);
+
 		memset(step[iBand].dBandY, 0, iBSizeY*sizeof(double));
 		memset(step[iBand].dBandCb, 0, iBSizeC*sizeof(double));
 		memset(step[iBand].dBandCr, 0, iBSizeC*sizeof(double));
@@ -391,6 +403,8 @@ int decTree::analyseBandH(cFilter *pFilter, bool ignoreMult)
 		double *dBandYE = enhance(Y,false,pFilter->iEnhanceValue,pFilter->bOdd, 1, nBands, pFilter->iRemainder);
 		double *dBandCbE = enhance(Cb,false,pFilter->iEnhanceValue,pFilter->bOdd, 1, nBands, pFilter->iRemainder);
 		double *dBandCrE = enhance(Cr,false,pFilter->iEnhanceValue,pFilter->bOdd, 1, nBands, pFilter->iRemainder);
+		if (!dBandYE || !dBandCbE || !dBandCrE)
+			error(2, errno, __func__);
 		double sum, *p;
 		//int iFHYE = iHeightCeiledY+2*pFilter->iEnhanceValue;
 		//int iFHCE = iHeightCeiledC+2*pFilter->iEnhanceValue;
@@ -403,7 +417,6 @@ int decTree::analyseBandH(cFilter *pFilter, bool ignoreMult)
 					sum = pFilter->pDFilters[iBand][0]*p[0];
 					for (int l=1;l<pFilter->pDFilterLength[iBand];l++)
 						sum+=pFilter->pDFilters[iBand][l]*(p[-l*iWidthY]*sgn+p[l*iWidthY]);
-					
 				}
 				else
 				{
@@ -481,6 +494,8 @@ int decTree::analyseBandWH(cFilter *pFilter, bool ignoreMult)
 	
 
 	decTree *newstep = new decTree[nBands*nBands];
+	if (!newstep)
+		error(1, errno, __func__);
 	for (int i=0; i<nBands*nBands; i++)
 	{
 		decTree *curstep = stepAt(i/nBands,0)->stepAt(0,i%nBands);
@@ -497,6 +512,9 @@ int decTree::analyseBandWH(cFilter *pFilter, bool ignoreMult)
 		newstep[i].dBandY=new double[iWY*iHY];
 		newstep[i].dBandCb=new double[iWC*iHC];
 		newstep[i].dBandCr=new double[iWC*iHC];
+		if (!newstep[i].dBandY || !newstep[i].dBandCb || !newstep[i].dBandCr)
+			error(2, errno, __func__);
+
 		memcpy(newstep[i].dBandY, curstep->dBandY, iWY*iHY*sizeof(double));
 		memcpy(newstep[i].dBandCb, curstep->dBandCb, iWC*iHC*sizeof(double));
 		memcpy(newstep[i].dBandCr, curstep->dBandCr, iWC*iHC*sizeof(double));
@@ -543,6 +561,8 @@ double *decTree::enhance(component comp, bool byW, int iEnhanceValue, bool bOdd,
 		int iFW = iWC + 2 * iEnhanceValue;
 		int iSizeE = iFW * iHeight;
 		dBandE = new double[iSizeE];
+		if (!dBandE)
+			return nullptr;
 	
 		for (int j=0; j < iHeight; j++)
 			for (int i=0; i < iWidth; i++)
@@ -584,6 +604,8 @@ double *decTree::enhance(component comp, bool byW, int iEnhanceValue, bool bOdd,
 		int iFH = iHC + 2 * iEnhanceValue;
 		int iSizeE = iFH * iWidth;
 		dBandE = new double[iSizeE];
+		if (!dBandE)
+			return nullptr;
 	
 		for (int j=0; j < iHeight; j++)
 			for (int i=0; i < iWidth; i++)
@@ -654,6 +676,8 @@ int decTree::synthesizeBandW()
 			stepAt(i,j)->synthesizeBand();
 
 	decTree *newstep = new decTree[iNumH];
+	if (!newstep)
+		error(2, errno, __func__);
 
 	for (int k=0;k<iNumH;k++)
 	{
@@ -672,6 +696,9 @@ int decTree::synthesizeBandW()
 		newstep[k].dBandY = new double[iSizeYn];
 		newstep[k].dBandCb = new double[iSizeCn];
 		newstep[k].dBandCr = new double[iSizeCn];
+		if (!newstep[k].dBandY || !newstep[k].dBandCb || !newstep[k].dBandCr)
+			error(3, errno, __func__);
+
 		memset(newstep[k].dBandY,0,iSizeYn*sizeof(double));
 		memset(newstep[k].dBandCb,0,iSizeCn*sizeof(double));
 		memset(newstep[k].dBandCr,0,iSizeCn*sizeof(double));
@@ -686,6 +713,8 @@ int decTree::synthesizeBandW()
 		for (int iBand=0; iBand<nBands; iBand++)
 		{
 			decTree *pDTE = new decTree;
+			if (!pDTE)
+				error(4, errno,  __func__);
 			pDTE->iNumH = 1;
 			pDTE->iNumW = 1;
 			pDTE->iWidthY = iWidthYS;
@@ -711,6 +740,8 @@ int decTree::synthesizeBandW()
 			double *dBandYSE = pDTE->enhance(Y,true,iEV,true,iSgn,nBands,1);
 			double *dBandCbSE = pDTE->enhance(Cb,true,iEV,true,iSgn,nBands,1);
 			double *dBandCrSE = pDTE->enhance(Cr,true,iEV,true,iSgn,nBands,1);
+			if (!dBandYSE || !dBandCbSE || !dBandCrSE)
+				error(5, errno, __func__);
 			double *p,sum;
 
 			for (int j=0; j<iHeightYn; j++)
@@ -782,7 +813,7 @@ int decTree::synthesizeBandW()
 
 	}
 
-	iNumH = iNumH;
+	// iNumH = iNumH;
 	iNumW = 1;
 	delete[] step;
 	if (iNumH==1)
@@ -821,6 +852,8 @@ int decTree::synthesizeBandH()
 			stepAt(i,j)->synthesizeBand();
 
 	decTree *newstep = new decTree[iNumW];
+	if (!newstep)
+		error(2, errno, __func__);
 
 	for (int k=0;k<iNumW;k++)
 	{
@@ -839,6 +872,8 @@ int decTree::synthesizeBandH()
 		newstep[k].dBandY = new double[iSizeYn];
 		newstep[k].dBandCb = new double[iSizeCn];
 		newstep[k].dBandCr = new double[iSizeCn];
+		if (!newstep[k].dBandY || !newstep[k].dBandCb || !newstep[k].dBandCr)
+			error(3, errno, __func__);
 		memset(newstep[k].dBandY,0,iSizeYn*sizeof(double));
 		memset(newstep[k].dBandCb,0,iSizeCn*sizeof(double));
 		memset(newstep[k].dBandCr,0,iSizeCn*sizeof(double));
@@ -853,6 +888,8 @@ int decTree::synthesizeBandH()
 		for (int iBand=0; iBand<nBands; iBand++)
 		{
 			decTree *pDTE = new decTree;
+			if (!pDTE)
+				error(4, errno, __func__);
 			pDTE->iNumH = 1;
 			pDTE->iNumW = 1;
 			pDTE->iHeightY = iHeightYS;
@@ -878,6 +915,9 @@ int decTree::synthesizeBandH()
 			double *dBandYSE = pDTE->enhance(Y,false,iEV,true,iSgn,nBands,1);
 			double *dBandCbSE = pDTE->enhance(Cb,false,iEV,true,iSgn,nBands,1);
 			double *dBandCrSE = pDTE->enhance(Cr,false,iEV,true,iSgn,nBands,1);
+			if (!dBandYSE || !dBandCbSE || !dBandCrSE)
+				error(5, errno, __func__);
+
 			double *p,sum;
 
 			for (int j=0; j<iHeightY; j++)
@@ -949,7 +989,7 @@ int decTree::synthesizeBandH()
 
 	}
 
-	iNumW = iNumW;
+	// iNumW = iNumW;
 	iNumH = 1;
 	delete[] step;
 	if (iNumW==1)
@@ -1008,6 +1048,8 @@ double * decTree::sparse(component comp, bool byW, bool bOdd, int iNumBands, int
 		int iWidthE = (iWidth-1+!!iShift)*iNumBands+1;
 		int iSizeE = iWidthE * iHeight;
 		dBandS = new double[iSizeE];
+		if (!dBandS)
+			return nullptr;
 		memset(dBandS,0,iSizeE*sizeof(double));
 
 		for (int j=0; j<iHeight; j++)
@@ -1019,6 +1061,8 @@ double * decTree::sparse(component comp, bool byW, bool bOdd, int iNumBands, int
 		int iHeightE = (iHeight-1+!!iShift)*iNumBands+1;
 		int iSizeE = iWidth * iHeightE;
 		dBandS = new double[iSizeE];
+		if (!dBandS)
+			return nullptr;
 		memset(dBandS,0,iSizeE*sizeof(double));
 
 		for (int j=0; j<iHeight; j++)
@@ -1073,6 +1117,8 @@ short * decTree::getSubCoef(double extension, component comp, int filenum, int *
 	*sub_height = iHeight;
 
 	short *subCoeff = new short[iHeight*iWidth];
+	if (!subCoeff)
+		return nullptr;
 	memset(subCoeff, 0, iHeight*iWidth * sizeof(short));
 
 	//double delta = deltacoef/extension;
@@ -1170,6 +1216,8 @@ void decTree::copyStructure(decTree * dest)
 		pNew->dBandY = new double[iWidthY*iHeightY];
 		pNew->dBandCr = new double[iWidthC*iHeightC];
 		pNew->dBandCb = new double[iWidthC*iHeightC];
+		if (!pNew->dBandY || !pNew->dBandCr || !pNew->dBandCb)
+			error(1,errno,__func__);
 		memset(pNew->dBandY,0,iWidthY*iHeightY*sizeof(double));
 		memset(pNew->dBandCr,0,iWidthC*iHeightC*sizeof(double));
 		memset(pNew->dBandCb,0,iWidthC*iHeightC*sizeof(double));

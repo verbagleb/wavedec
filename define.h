@@ -34,4 +34,9 @@ typedef struct tagBITMAPINFOHEADER {
 	DWORD biClrImportant;
 } BITMAPINFOHEADER, *PBITMAPINFOHEADER;
 
+#define ERR_MESSAGE_OUT { cerr << err_message << " " << strerror(errno) << endl; }
+#define CHECK_ZERO(VAR) do { if((VAR)) ERR_MESSAGE_OUT } while(false)
+#define CHECK_NZERO(VAR) do { if(!(VAR)) ERR_MESSAGE_OUT } while(false)
+#define CHECK_VAL(VAR, VAL) do { if((VAR)!=(VAL)) ERR_MESSAGE_OUT } while(false)
+
 #endif

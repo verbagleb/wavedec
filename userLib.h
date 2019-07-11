@@ -11,6 +11,7 @@
 #include <assert.h>
 #include <complex>
 #include <unistd.h>
+#include <error.h>
 
 typedef std::complex<double> compd;
 

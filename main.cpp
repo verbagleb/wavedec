@@ -22,7 +22,7 @@
 	for (char * p = cline_array[cline_index]; p < c; p++) \
 		printf(" "); \
 	printf("^\n"); \
-	return 6; } \
+	return -1; } \
 	while(false)
 
 using namespace std;
@@ -47,7 +47,7 @@ int main(
 	if (argc != 1)
 	{
 		cerr << "No parameters are supported" << endl;
-		return -1;
+		return 1;
 	}
 
 	const double large_qf = 20.0;
@@ -67,10 +67,14 @@ int main(
 	cFilter *pFilter;
 	int nFilters;
 
-	readConfig(config_name, nFilters, pFilter);
+	i = readConfig(config_name, nFilters, pFilter);
+	if (i)
+		return 2;
 	for (int iFilter=0; iFilter<nFilters; iFilter++)
 		pFilter[iFilter].normalize();
-	readGrid(grid_name, iSubW, iSubH, images_array, images_number, qs_array, qs_number, cline_array, cline_number);
+	i = readGrid(grid_name, iSubW, iSubH, images_array, images_number, qs_array, qs_number, cline_array, cline_number);
+	if (i)
+		return 3;
 
 	for (int image_index=0; image_index < images_number; image_index++)
 	{
@@ -83,7 +87,7 @@ int main(
 		{
 			printf("Error creating cImage !\n");
 			delete[] pFilter;
-			return 2;
+			return 4;
 		}
 
 		int picWidth, picHeight;
@@ -94,17 +98,17 @@ int main(
 			delete pImageRGB;
 			pImageRGB = nullptr;
 			delete[] pFilter;
-			return 3;
+			return 4;
 		}
 
 		cImageYCbCr *pImage_o = pImageRGB->CreateYCrCb420FromRGB(iSubW, iSubH);
-		if (i)
+		if (!pImage_o)
 		{
 			printf("Error creating YCrCb, err_num = %i !\n", i);
 			delete pImageRGB;
 			pImageRGB = nullptr;
 			delete[] pFilter;
-			return 4;
+			return 6;
 		}
 		delete pImageRGB;
 		// grey
@@ -114,12 +118,25 @@ int main(
 		//pImage_o->setGrey();
 
 		decTree * pDecTree = new decTree;
-
-		pDecTree->loadImage(pImage_o);
 		if (!pDecTree)
-			return 5;
+			return 7;
+
+		i = pDecTree->loadImage(pImage_o);
+		if (i)
+		{
+			delete pImage_o;
+			delete[] pFilter;
+			return 8;
+		}
 
 		decTree * pDecTree_original = new decTree;
+		if (!pDecTree_original)
+		{
+			delete pImage_o;
+			delete[] pFilter;
+			return 9;
+		}
+
 		pDecTree->copyTree(pDecTree_original);
 
 		for (int cline_index = 0; cline_index < cline_number; cline_index++)
@@ -197,11 +214,13 @@ int main(
 		{
 			double quantStep = qs_array[qs_index];
 			if (formOutput(output_dir_name, bitmap_name, quantStep, totalBands, log_short))
-				return -3;
+				return 10;
 
 			if (qs_index == 0)
 			{
 				double * energy = new double [totalBands];
+				if (!energy)
+					return 11;
 				for (int compnum = 0; compnum < 3; compnum++)
 				{
 					component comp = (component) compnum;
@@ -224,6 +243,8 @@ int main(
 					if (!bExists)
 					{
 						char ** band_names = new char* [totalBands];
+						if (!band_names)
+							return 12;
 						decTree::getAllNames(band_names, pDecTree, comp);
 						fprintf(energy_log, "%25s","");
 						for (int i = 0; i < totalBands; i++)
@@ -260,6 +281,8 @@ int main(
 			cout << bitmap_name << " " << quantStep << endl;
 
 			decTree * pDecTree_recon = new decTree;
+			if (!pDecTree_recon)
+				return 13;
 			pDecTree->copyTree(pDecTree_recon);
 
 			for (int compnum=0; compnum<3; compnum++)
@@ -270,10 +293,12 @@ int main(
 				short ** coeff_orig = new short *[totalBands];
 				int * sub_width = new int [totalBands];
 				int * sub_height = new int [totalBands];
+				if (!coeff_orig || !sub_width || !sub_height)
+					return 14;
 
 				int f = pDecTree->getAllCoefs(coeff_orig, sub_width, sub_height, extension, comp);
 				if (!f || f!=totalBands)
-					return 10;
+					return 15;
 				pDecTree_recon->setAllCoefs(coeff_orig, extension, comp, 2);
 
 				double ent0s, ent0_sum = 0;
@@ -294,6 +319,8 @@ int main(
 
 #ifdef PRINT_SEPARATE_BANDS
 			double * psnr = new double [totalBands];
+			if (!psnr)
+				return 16;
 			for (int compnum = 0; compnum < 3; compnum++)
 			{
 				component comp = (component) compnum;
@@ -308,22 +335,24 @@ int main(
 			{
 				cImageYCbCr * pImage_b=pDecTree_recon->createImage(false);
 				if (!pImage_b)
-					return 6;
+					return 17;
 				pImage_b->setSubW(iSubW);
 				pImage_b->setSubH(iSubH);
 			
 				cImageRGB *pOut = pImage_b->CreateRGB24FromYCbCr420();
 				if (!pOut)
-					return 9;
+					return 18;
 
 				char bands_name[128], bands_dir[128];
 				sprintf(bands_dir, "%s/bands", output_dir_name);
-				mkdir(bands_dir, 0777);
+				i = mkdir(bands_dir, 0777);
+				if (i && errno!=EEXIST)
+					error(19, errno, "Restored directory");
 			   	sprintf(bands_name, "%s/%s_%.3f_bands.bmp", 
 						bands_dir, bitmap_name, quantStep);
 				i = pOut->WriteToBitmapFile(bands_name);
 				if (i)
-					return 100 + i;
+					return 200 + i;
 
 				delete pImage_b;
 				delete pOut;
@@ -345,36 +374,40 @@ int main(
 			{	
 				cImageYCbCr * pImage_r=pDecTree_recon->createImage(false);
 				if (!pImage_r)
-					return 15;
+					return 21;
 				pImage_r->setSubW(iSubW);
 				pImage_r->setSubH(iSubH);
 				double multdif = 10.0;
 				cImageYCbCr *pDiff = cImageYCbCr::difference(pImage_o, pImage_r, multdif);
 				if (!pDiff)
-					return 11;
+					return 22;
 				cImageRGB *pOutR = pImage_r->CreateRGB24FromYCbCr420();
 				if (!pOutR)
-					return 9;
+					return 23;
 
 				char restored_name[128], restored_dir[128];
 				sprintf(restored_dir, "%s/restored", output_dir_name);
-				mkdir(restored_dir, 0777);
+				i = mkdir(restored_dir, 0777);
+				if (i && errno!=EEXIST)
+					error(24, errno, "Restored directory");
 			   	sprintf(restored_name, "%s/%s_%.3f.bmp", 
 						restored_dir, bitmap_name, quantStep);
 				i = pOutR->WriteToBitmapFile(restored_name);
 				if (i)
-					return 100 + i;
+					return 250 + i;
 				cImageRGB *pOutD = pDiff->CreateRGB24FromYCbCr420();
 				if (!pOutD)
-					return 12;
+					return 26;
 				char diff_name[128], diff_dir[128];
 				sprintf(diff_dir, "%s/difference_x%.2f", output_dir_name, multdif);
-				mkdir(diff_dir, 0777);
+				i = mkdir(diff_dir, 0777);
+				if (i && errno!=EEXIST)
+					error(27, errno, "Restored directory");
 			   	sprintf(diff_name, "%s/%s_%.2f.bmp", 
 						diff_dir, bitmap_name, quantStep);
 				i = pOutD->WriteToBitmapFile(diff_name);
 				if (i)
-					return 130 + i;
+					return 280 + i;
 				delete pImage_r;
 				delete pDiff;
 				delete pOutR;

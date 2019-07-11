@@ -126,17 +126,8 @@ cImageYCbCr* cImageRGB::CreateYCrCb420FromRGB(int iSubW, int iSubH)
 	if (!pRGB)
 		return nullptr;
 
+	cImageYCbCr * ret;
 	cout << "Conversion RGB->YCbCr... ";
-
-	cImageYCbCr *ret = new cImageYCbCr;
-
-	ret->setEnhanceValue(0);
-	ret->setFullWidth(iWidth);
-	ret->setFullHeight(iHeight);
-	ret->setFullWidth2(ceilTo(iWidth, iSubW) / iSubW);
-	ret->setFullHeight2(ceilTo(iHeight, iSubH) / iSubH);
-	ret->setSubW(iSubW);
-	ret->setSubH(iSubH);
 
 	int iWidth2 = ceilTo(iWidth, iSubW) / iSubW;
 	int iHeight2 = ceilTo(iHeight, iSubH) / iSubH;
@@ -220,7 +211,7 @@ cImageYCbCr* cImageRGB::CreateYCrCb420FromRGB(int iSubW, int iSubH)
 				p2[l] = Limiting_a_b((Cb1 + Cb2 + Cb3 + Cb4) / 4.0, 0, 255);
 				break;
 			default:
-				return nullptr;
+				goto clearYCrCb;
 			}
 		}
 		if (j < iWidth)		// if iFullWidth is odd
@@ -254,7 +245,7 @@ cImageYCbCr* cImageRGB::CreateYCrCb420FromRGB(int iSubW, int iSubH)
 				p2[l] = Limiting_a_b((Cb1 + Cb3) / 2.0, 0, 255);
 				break;
 			default:
-				return nullptr;
+				goto clearYCrCb;
 			}
 		}
 	}
@@ -291,7 +282,7 @@ cImageYCbCr* cImageRGB::CreateYCrCb420FromRGB(int iSubW, int iSubH)
 				p2[l] = Limiting_a_b((Cb1 + Cb2) / 2.0, 0, 255);
 				break;
 			default:
-				return nullptr;
+				goto clearYCrCb;
 			}
 		}
 		if (j < iWidth)		// if both iFullHeight and iFullWidth are odd
@@ -308,6 +299,16 @@ cImageYCbCr* cImageRGB::CreateYCrCb420FromRGB(int iSubW, int iSubH)
 		}
 	}
 
+	ret = new cImageYCbCr;
+
+	ret->setEnhanceValue(0);
+	ret->setFullWidth(iWidth);
+	ret->setFullHeight(iHeight);
+	ret->setFullWidth2(ceilTo(iWidth, iSubW) / iSubW);
+	ret->setFullHeight2(ceilTo(iHeight, iSubH) / iSubH);
+	ret->setSubW(iSubW);
+	ret->setSubH(iSubH);
+
 	ret->setpY0(pY0);
 	ret->setpCr0(pCr0);
 	ret->setpCb0(pCb0);
@@ -317,6 +318,12 @@ cImageYCbCr* cImageRGB::CreateYCrCb420FromRGB(int iSubW, int iSubH)
 	
 	cout << "Success" << endl;
 	return ret;
+
+clearYCrCb:
+	delete[] pY0;
+	delete[] pCr0;
+	delete[] pCb0;
+	return nullptr;
 }
 
 // JPEG conversion
