@@ -763,6 +763,7 @@ cImageYCbCr *cImageYCbCr::takeAverage(cImageYCbCr ** pImage_ar, int numImages)
 	delete[] pY0d;
 	delete[] pCr0d;
 	delete[] pCb0d;
+	pY0d = pCr0d = pCb0d = nullptr;
 	return pAverage;
 }
 

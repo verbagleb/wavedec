@@ -12,6 +12,9 @@ typedef uint16_t WORD;
 typedef uint32_t DWORD;
 typedef int32_t LONG;
 	
+// Turning alignment off
+#pragma pack(push, 1)
+
 typedef struct tagBITMAPFILEHEADER {
 	WORD  bfType;
 	DWORD bfSize;
@@ -34,6 +37,10 @@ typedef struct tagBITMAPINFOHEADER {
 	DWORD biClrImportant;
 } BITMAPINFOHEADER, *PBITMAPINFOHEADER;
 
+// Turning alignment back
+#pragma pack(pop)
+
+// Error processing
 #define ERR_MESSAGE_OUT { cerr << err_message << " " << strerror(errno) << endl; }
 #define CHECK_ZERO(VAR) do { if((VAR)) ERR_MESSAGE_OUT } while(false)
 #define CHECK_NZERO(VAR) do { if(!(VAR)) ERR_MESSAGE_OUT } while(false)

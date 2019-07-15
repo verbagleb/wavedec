@@ -389,7 +389,7 @@ void comp_psnr(double * error, int totalBands, FILE * log_short)
 
 int formOutput(char * output_dir_name, const char * bitmap_name, double quantStep, int totalBands, FILE ** log_short)
 {
-	mkdir("output", 0777); 	
+	MKDIR("output", 0777); 	
 	
 	const int NMAX=10000;
 	if (output_dir_name[0]=='\0')
@@ -400,7 +400,7 @@ int formOutput(char * output_dir_name, const char * bitmap_name, double quantSte
 		{
 			sprintf(output_dir_name, "output/output_%d", n);
 			sprintf(output_name, "./output_%d", n);
-			flag = mkdir(output_dir_name, 0777);
+			flag = MKDIR(output_dir_name, 0777);
 		}
 		if (n==NMAX)
 		{
@@ -409,7 +409,7 @@ int formOutput(char * output_dir_name, const char * bitmap_name, double quantSte
 		}
 		cout << "Directory generated: " << output_dir_name << endl;
 
-		if(		remove("output/output_last") )
+		if(		remove("output/output_last") && errno!=ENOENT)
 			error(2, errno, __func__);
 		if(		symlink(output_name, "output/output_last") )
 			error(3, errno, __func__);

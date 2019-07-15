@@ -59,18 +59,14 @@ int cImageRGB::CreateFromBitmapFile(const char * filename, int *picWidth, int *p
 	FILE * fp;
 	BITMAPFILEHEADER bmfh;
 	BITMAPINFOHEADER bmih;
+	assert(sizeof(bmfh)==14);
+	assert(sizeof(bmih)==40);
 
 	cout << "Reading a picture from " << filename << "... ";
 	fp = fopen(filename, "rb");
 	if (fp)
 	{
-		if ((i=fread(&bmfh, 2, 1, fp)) < 1)
-		{
-			fclose(fp);
-			return 2;
-		}
-
-		if ((i=fread((void*)&bmfh + 4, 12, 1, fp)) < 1)
+		if ((i=fread(&bmfh, 14, 1, fp)) < 1)
 		{
 			fclose(fp);
 			return 2;
@@ -323,6 +319,7 @@ clearYCrCb:
 	delete[] pY0;
 	delete[] pCr0;
 	delete[] pCb0;
+	pY0 = pCr0 = pCb0 = nullptr;
 	return nullptr;
 }
 
@@ -428,6 +425,8 @@ int cImageRGB::WriteToBitmapFile(char * filename)
 	FILE * fp;
 	BITMAPFILEHEADER bmfh;
 	BITMAPINFOHEADER bmih;
+	assert(sizeof(bmfh)==14);
+	assert(sizeof(bmih)==40);
 
 	if (!pRGB)
 		return 1;
@@ -441,12 +440,7 @@ int cImageRGB::WriteToBitmapFile(char * filename)
 		bmfh.bfReserved1 = 0;
 		bmfh.bfReserved2 = 0;
 		bmfh.bfSize = iSizeRGB() + bmfh.bfOffBits;
-		if (fwrite(&bmfh, 2, 1, fp) < 1)
-		{
-			fclose(fp);
-			return 3;
-		}
-		if (fwrite((void*)&bmfh+4, 12, 1, fp) < 1)
+		if (fwrite(&bmfh, 14, 1, fp) < 1)
 		{
 			fclose(fp);
 			return 3;
