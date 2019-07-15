@@ -399,7 +399,7 @@ int formOutput(char * output_dir_name, const char * bitmap_name, double quantSte
 		for (n=0, flag=-1; flag && n<NMAX; n++)
 		{
 			sprintf(output_dir_name, "output/output_%d", n);
-			sprintf(output_name, "./output_%d", n);
+			sprintf(output_name, "output_%d", n);
 			flag = MKDIR(output_dir_name, 0777);
 		}
 		if (n==NMAX)
@@ -409,10 +409,19 @@ int formOutput(char * output_dir_name, const char * bitmap_name, double quantSte
 		}
 		cout << "Directory generated: " << output_dir_name << endl;
 
-		if(		remove("output/output_last") && errno!=ENOENT)
-			error(2, errno, __func__);
-		if(		symlink(output_name, "output/output_last") )
-			error(3, errno, __func__);
+		if(		RMLINK("output/output_last") && errno!=ENOENT)
+			cerr << "Failed to delete old link to the folder" << endl;
+#ifdef WINDOWS
+		char output_full_name[64];
+		sprintf(output_full_name, "output\\%s", output_name);
+		errno = 0;
+		SYMLINK(output_full_name, "output\\output_last");
+		if (errno)
+			cerr << "Failed to create a link to the folder" << endl;
+#else
+		if(	SYMLINK(output_name, "output/output_last")	)
+			cerr << "Failed to create a link to the folder" << endl;
+#endif
 
 		// Making a copy of parametergs.cfg in the output dir
 		char buf[BUFSIZ];

@@ -103,7 +103,10 @@ int cImageRGB::CreateFromBitmapFile(const char * filename, int *picWidth, int *p
 			fclose(fp);
 		}
 		else
+		{
+			cerr << "Unsupported set of .bmp parameters\n";
 			return 4;
+		}
 	}
 	else
 		return 1;

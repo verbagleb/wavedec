@@ -16,6 +16,16 @@
 #include "userLib.h"
 #include "decTree.h"
 				
+#ifdef WINDOWS
+#define RETURN(A) do { \
+	cout << "Press ENTER" << endl; \
+	getchar(); \
+	return A; \
+} while(false)
+#else
+#define RETURN return
+#endif
+
 #define  INVSYNTAX do \
 	{ \
 	printf ("Invalid hierarchy syntax:\n\t%s\n\t",cline_array[cline_index]); \

@@ -1,6 +1,6 @@
 #pragma once
 #include <iostream>
-#include <error.h>
+//#include <error.h>
 
 #include "define.h"
 #include "cImageYCbCr.h"

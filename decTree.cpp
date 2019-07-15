@@ -1232,7 +1232,10 @@ void decTree::copyStructure(decTree * dest)
 		pNew->dBandCr = new double[iWidthC*iHeightC];
 		pNew->dBandCb = new double[iWidthC*iHeightC];
 		if (!pNew->dBandY || !pNew->dBandCr || !pNew->dBandCb)
-			error(1,errno,__func__);
+		{
+			perror(__func__);
+			return;
+		}
 		memset(pNew->dBandY,0,iWidthY*iHeightY*sizeof(double));
 		memset(pNew->dBandCr,0,iWidthC*iHeightC*sizeof(double));
 		memset(pNew->dBandCb,0,iWidthC*iHeightC*sizeof(double));
