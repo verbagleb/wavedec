@@ -46,7 +46,7 @@ public:
 	static double getSubEnergy(decTree * pA, component comp, bool bShift = true);
 	static int getAllEnergy(double * dest, decTree * pA, component comp, int bandnum = 0, 
 			bool bShift = true);
-	static int getAllNames(char ** dest, decTree * pA, component comp, int bandnum = 0,
+	static int getAllNames(char ** dest, decTree * pA, int bandnum = 0,
 			char * current_name = nullptr);
 	decTree * extractSgn(double epsilon = 0.0);
 	void addSgn(decTree * src);

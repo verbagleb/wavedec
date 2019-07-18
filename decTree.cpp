@@ -1686,8 +1686,7 @@ int decTree::getAllEnergy(double * dest, decTree *pA, component comp, int bandnu
 	return ret;
 }
 
-int decTree::getAllNames(char ** dest, decTree *pA, component comp, int bandnum, 
-		char * current_name)
+int decTree::getAllNames(char ** dest, decTree *pA, int bandnum, char * current_name)
 {
 	if (!dest)
 		return -1;
@@ -1710,7 +1709,7 @@ int decTree::getAllNames(char ** dest, decTree *pA, component comp, int bandnum,
 		{
 			char new_name[128];
 			sprintf(new_name, "%s(%d,%d)",(current_name?current_name:""),i,j);
-			int f = getAllNames(dest, pA->stepAt(i,j), comp, bandnum, new_name);
+			int f = getAllNames(dest, pA->stepAt(i,j), bandnum, new_name);
 			if (!f)
 				return 0; // some bands were empty
 					  // or non-consistent

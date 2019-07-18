@@ -387,10 +387,14 @@ void comp_psnr(double * error, int totalBands, FILE * log_short)
 	fprintf(log_short, "\n");
 }
 
-int formOutput(char * output_dir_name, const char * bitmap_name, double quantStep, int totalBands, FILE ** log_short)
+int formOutput(char * output_dir_name,
+		FILE ** log_short, FILE ** log_energy, FILE ** log_entropy, FILE ** log_psnr,
+		int totalBands, char ** band_names)
 {
+	// Output dir
 	MKDIR("output", 0777); 	
 	
+	// This output dir
 	const int NMAX=10000;
 	if (output_dir_name[0]=='\0')
 	{
@@ -423,7 +427,7 @@ int formOutput(char * output_dir_name, const char * bitmap_name, double quantSte
 			cerr << "Failed to create a link to the folder" << endl;
 #endif
 
-		// Making a copy of parametergs.cfg in the output dir
+		// Making a copy of parametergs.cfg in this output dir
 		char buf[BUFSIZ];
 		char parameters_name[128];
 		sprintf(parameters_name, "%s/parameters.cfg", output_dir_name);
@@ -438,6 +442,7 @@ int formOutput(char * output_dir_name, const char * bitmap_name, double quantSte
 		fclose(dest);
 	}
 
+	// Gerenal (short) log file
 	char log_short_name[128];
 
 	if (!log_short)
@@ -469,24 +474,100 @@ int formOutput(char * output_dir_name, const char * bitmap_name, double quantSte
 				return 5;
 			}
 			fprintf(log_short[k],"bitmap_name\tqstep");
-#ifdef PRINT_SEPARATE_BANDS
+#ifdef PRINT_SEPARATE_BANDS /*
 			for (int j=0; j<totalBands; j++)
-				fprintf(log_short[k],"\tEnt_%d",j);
+				fprintf(log_short[k],"\tEnt_%d",j); */
 #endif
-			fprintf(log_short[k],"\tEnt_Y");
-			fprintf(log_short[k],"\tEnt_Cr");
-			fprintf(log_short[k],"\tEnt_Cb");
-#ifdef PRINT_SEPARATE_BANDS
+			fprintf(log_short[k],"\t%10s","Ent_Y");
+			fprintf(log_short[k],"\t%10s","Ent_Cr");
+			fprintf(log_short[k],"\t%10s","Ent_Cb");
+#ifdef PRINT_SEPARATE_BANDS /*
 			for (int j=0; j<totalBands; j++)
-				fprintf(log_short[k],"\tPSNR_%d",j);
+				fprintf(log_short[k],"\tPSNR_%d",j); */
 #endif
-			fprintf(log_short[k],"\tPSNR_Y");
-			fprintf(log_short[k],"\tPSNR_Cr");
-			fprintf(log_short[k],"\tPSNR_Cb\n");
+			fprintf(log_short[k],"\t%10s","PSNR_Y");
+			fprintf(log_short[k],"\t%10s","PSNR_Cr");
+			fprintf(log_short[k],"\t%10s\n","PSNR_Cb");
 		}
-		fprintf(log_short[k],"%s\t%.2f", bitmap_name, quantStep);
+	}
+
+	// Energy log files
+	for (int compnum = 0; compnum < 3; compnum++)
+	{
+		char energy_name[128];
+		sprintf(energy_name, "%s/energy_%s.txt", output_dir_name, comp_name[compnum]);
+		
+		if (formFile(log_energy[compnum], energy_name, totalBands, band_names))
+			return 6;
+	}
+
+#ifdef PRINT_SEPARATE_BANDS
+
+	// Entropy log files
+	for (int compnum = 0; compnum < 3; compnum++)
+	{
+		char entropy_name[128];
+		sprintf(entropy_name, "%s/entropy_%s.txt", output_dir_name, comp_name[compnum]);
+		if (formFile(log_entropy[compnum], entropy_name, totalBands, band_names, 8))
+			return 6;
+	}
+
+	// PSNR log files
+	for (int compnum = 0; compnum < 3; compnum++)
+	{
+		char psnr_name[128];
+		sprintf(psnr_name, "%s/psnr_%s.txt", output_dir_name, comp_name[compnum]);
+		if (formFile(log_psnr[compnum], psnr_name, totalBands, band_names, 8))
+			return 6;
+	}
+
+#endif
+
+	return 0;
+}
+
+// Form one standard log file
+int formFile(FILE *& fd, char * name, int totalBands, char ** band_names, int pause)
+{
+	int maxlen = getMaxLength(band_names, totalBands);
+
+	bool bExists;
+	fd = fopen(name, "r");
+	if (!fd)
+		bExists = false;
+	else
+	{
+		bExists = true;
+		fclose(fd);
+	}
+	
+	fd = fopen(name, "a");
+	if (!fd)
+		return 1;
+
+	if (!bExists)
+	{
+		fprintf(fd, "%25s","Image");
+		if (pause)
+			fprintf(fd, "\t%*s",pause, "Q. step");
+		for (int i = 0; i < totalBands; i++)
+			fprintf(fd, "\t%*s", maxlen, band_names[i]);
+		fprintf(fd, "\n");
 	}
 	return 0;
+}
+
+// Get max length of string in array
+int getMaxLength(char ** strings, int string_number)
+{
+	int length = 0;
+	for (int i = 0; i < string_number; i++)
+	{
+		int len_this = strlen(strings[i]);
+		if (len_this > length)
+			length = len_this;
+	}
+	return length;
 }
 
 //GV: counts PSNR between an array and its distorted copy

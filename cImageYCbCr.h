@@ -68,7 +68,7 @@ public:
 	void setWhite();
 	void setGrey();
 	void paintComp(component comp, unsigned char val);
-	cImageRGB* CreateRGB24FromYCbCr420();
+	cImageRGB* CreateRGB24FromYCbCr();
 
 public:
 	static int ceilTo(int number, int base = 1, int remainder = 0);

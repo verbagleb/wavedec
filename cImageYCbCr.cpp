@@ -428,7 +428,7 @@ void cImageYCbCr::fillEnhancementC(component comp, int iW, int iH, int iEvenOdd,
 }
 
 // Works only if the relation between Dimensions and Dimensions2 is OK
-cImageRGB* cImageYCbCr::CreateRGB24FromYCbCr420()
+cImageRGB* cImageYCbCr::CreateRGB24FromYCbCr()
 {
 	cout << "Conversion YCbCr->RGB... ";
 	if (!pY0 || !pCr0 || !pCb0)

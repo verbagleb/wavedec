@@ -49,7 +49,7 @@ void cImageRGB::setWidth(int val)
 void cImageRGB::setpRGB(unsigned char * val)
 {
 	if (pRGB)
-		delete pRGB;
+		delete[] pRGB;
 	pRGB = val;
 }
 
@@ -120,7 +120,7 @@ int cImageRGB::CreateFromBitmapFile(const char * filename, int *picWidth, int *p
 }
 
 
-cImageYCbCr* cImageRGB::CreateYCrCb420FromRGB(int iSubW, int iSubH)
+cImageYCbCr* cImageRGB::CreateYCrCbFromRGB(int iSubW, int iSubH)
 {
 	if (!pRGB)
 		return nullptr;

@@ -32,7 +32,7 @@ public:
 
 public:
 	int CreateFromBitmapFile(const char * filename, int *picWidth = NULL, int *picHeight = NULL);
-	cImageYCbCr* CreateYCrCb420FromRGB(int iSubW = 1, int iSubH = 1);
+	cImageYCbCr* CreateYCrCbFromRGB(int iSubW = 1, int iSubH = 1);
 public:
 	static int YFromRGB(int iR, int iG, int iB);
 	static int CrFromRGB(int iR, int iG, int iB);

@@ -77,11 +77,13 @@ int main(
 	cFilter *pFilter;
 	int nFilters;
 
+	// Reads filter list
 	i = readConfig(config_name, nFilters, pFilter);
 	if (i)
 		RETURN(2);
 	for (int iFilter=0; iFilter<nFilters; iFilter++)
 		pFilter[iFilter].normalize();
+	// Reads decomposition parameters
 	i = readGrid(grid_name, iSubW, iSubH, images_array, images_number, qs_array, qs_number, cline_array, cline_number);
 	if (i)
 		RETURN(3);
@@ -111,7 +113,7 @@ int main(
 			RETURN(4);
 		}
 
-		cImageYCbCr *pImage_o = pImageRGB->CreateYCrCb420FromRGB(iSubW, iSubH);
+		cImageYCbCr *pImage_o = pImageRGB->CreateYCrCbFromRGB(iSubW, iSubH);
 		if (!pImage_o)
 		{
 			printf("Error creating YCrCb, err_num = %i !\n", i);
@@ -131,6 +133,7 @@ int main(
 		if (!pDecTree)
 			RETURN(7);
 
+		// Image is processed in a tree representation
 		i = pDecTree->loadImage(pImage_o);
 		if (i)
 		{
@@ -139,6 +142,7 @@ int main(
 			RETURN(8);
 		}
 
+		// Making a copy of original
 		decTree * pDecTree_original = new decTree;
 		if (!pDecTree_original)
 		{
@@ -149,6 +153,7 @@ int main(
 
 		pDecTree->copyTree(pDecTree_original);
 
+		// Decomposition according to parameters.cfg
 		for (int cline_index = 0; cline_index < cline_number; cline_index++)
 		{
 			char * c = cline_array[cline_index];
@@ -217,14 +222,32 @@ int main(
 					pDecTree->stepAt(i,j)->setMult(commonMult);
 		*/
 
+		// log files descriptors
 		int totalBands = pDecTree->countBands();	//GV
-		FILE * log_short[1]; // array for separate components
+		FILE * log_general[1] = {}; 
+		FILE * log_energy[3] = {}, * log_entropy[3] = {}, * log_psnr[3] = {};
+
+		// Getting band names for header generation
+		char ** band_names = new char* [totalBands];
+		if (!band_names)
+			return 7;
+		decTree::getAllNames(band_names, pDecTree);
+		int maxlen = getMaxLength(band_names, totalBands);
+
+		// Formation of all log outputs
+		if (formOutput(output_dir_name, log_general, log_energy, log_entropy, log_psnr,
+					totalBands, band_names))
+			RETURN(10);
+
+		// Memory liberation
+		for (int i = 0; i < totalBands; i++)
+			delete[] band_names[i];
+		delete[] band_names;
 
 		for (int qs_index = 0; qs_index < qs_number; qs_index++)
 		{
 			double quantStep = qs_array[qs_index];
-			if (formOutput(output_dir_name, bitmap_name, quantStep, totalBands, log_short))
-				RETURN(10);
+			fprintf(log_general[0],"%s\t%.2f", bitmap_name, quantStep);
 
 			if (qs_index == 0)
 			{
@@ -234,67 +257,41 @@ int main(
 				for (int compnum = 0; compnum < 3; compnum++)
 				{
 					component comp = (component) compnum;
-					char energy_name[128];
-					sprintf(energy_name, "%s/energy_%s.txt", output_dir_name, comp_name[compnum]);
 					double energy_original = decTree::getSubEnergy(pDecTree_original, comp);
 
-					bool bExists;
-					FILE * energy_log = fopen(energy_name, "r");
-					if (!energy_log)
-						bExists = false;
-					else
-					{
-						bExists = true;
-						fclose(energy_log);
-					}
-
-					energy_log = fopen(energy_name, "a");
-
-					if (!bExists)
-					{
-						char ** band_names = new char* [totalBands];
-						if (!band_names)
-							RETURN(12);
-						decTree::getAllNames(band_names, pDecTree, comp);
-						fprintf(energy_log, "%25s","");
-						for (int i = 0; i < totalBands; i++)
-							//fprintf(energy_log, "%9s ",band_names[i]);
-							fprintf(energy_log, "\t%9s",band_names[i]);
-						fprintf(energy_log, "\n");
-
-						for (int i = 0; i < totalBands; i++)
-							delete[] band_names[i];
-						delete[] band_names;
-					}
-
-					fprintf(energy_log, "%19s (rms)", bitmap_name);
+					fprintf(log_energy[compnum], "%19s (rms)", bitmap_name);
 					decTree::getAllEnergy(energy, pDecTree, comp);
 					double sum_sqrt = 0, sum = 0;
 					for (int i=0; i<totalBands; i++)
 					{
 						sum_sqrt += sqrt(energy[i]/energy_original);
-						//fprintf(energy_log, "%10.5f", sqrt(energy[i]/energy_original));
-						fprintf(energy_log, "\t%10.5f", sqrt(energy[i]/energy_original));
+						fprintf(log_energy[compnum], "\t%*.5f", 
+								maxlen, sqrt(energy[i]/energy_original));
 					}
-					fprintf(energy_log, "\n%20s (ms)","");
+					fprintf(log_energy[compnum], "\n%20s (ms)","");
 					for (int i=0; i<totalBands; i++)
 					{
 						sum += (energy[i]/energy_original);
-						fprintf(energy_log, "\t%10.5f", energy[i]/energy_original);
+						fprintf(log_energy[compnum], "\t%*.5f", 
+								maxlen, energy[i]/energy_original);
 					}
-					fprintf(energy_log, "\n");
-					fclose(energy_log);
+					fprintf(log_energy[compnum], "\n");
+					fclose(log_energy[compnum]);
 				}
 				delete[] energy;
 			}
 
 			cout << bitmap_name << " " << quantStep << endl;
 
+			// For storing dequantized
 			decTree * pDecTree_recon = new decTree;
 			if (!pDecTree_recon)
 				RETURN(13);
 			pDecTree->copyTree(pDecTree_recon);
 
+#ifdef PRINT_SEPARATE_BANDS
+			char str_buffer[6][1024] = {};
+#endif
 			for (int compnum=0; compnum<3; compnum++)
 			{
 				component comp = (component) compnum;
@@ -306,9 +303,11 @@ int main(
 				if (!coeff_orig || !sub_width || !sub_height)
 					RETURN(14);
 
+				// Extracting the coeffs with quanization
 				int f = pDecTree->getAllCoefs(coeff_orig, sub_width, sub_height, extension, comp);
 				if (!f || f!=totalBands)
 					RETURN(15);
+				// Storing with dequantization
 				pDecTree_recon->setAllCoefs(coeff_orig, extension, comp, 2);
 
 				double ent0s, ent0_sum = 0;
@@ -321,10 +320,11 @@ int main(
 						ent0s = entropy(coeff_orig[i], size)*size;
 					ent0_sum += ent0s;
 #ifdef PRINT_SEPARATE_BANDS
-					fprintf(log_short[0],"\t%.f", ent0s);
+					sprintf(str_buffer[compnum]+strlen(str_buffer[compnum]), "\t%*.f", 
+							maxlen, ent0s);
 #endif
 				}
-				fprintf(log_short[0],"\t%.f", ent0_sum);
+				fprintf(log_general[0],"\t%10.f", ent0_sum);
 
 				delete[] sub_width;
 				delete[] sub_height;
@@ -342,20 +342,22 @@ int main(
 				component comp = (component) compnum;
 				decTree::getAllPSNR(psnr, pDecTree, pDecTree_recon, comp);
 				for (int i=0; i<totalBands; i++)
-					fprintf(log_short[0], "\t%.3f", psnr[i]);
+					sprintf(str_buffer[3+compnum]+strlen(str_buffer[3+compnum]), "\t%*f", 
+							maxlen, psnr[i]);
 			}
 			delete[] psnr;
 #endif
 
 #ifdef BAND_IMAGE_OUTPUT
 			{
+				// Decomposition image
 				cImageYCbCr * pImage_b=pDecTree_recon->createImage(false);
 				if (!pImage_b)
 					RETURN(17);
 				pImage_b->setSubW(iSubW);
 				pImage_b->setSubH(iSubH);
 			
-				cImageRGB *pOut = pImage_b->CreateRGB24FromYCbCr420();
+				cImageRGB *pOut = pImage_b->CreateRGB24FromYCbCr();
 				if (!pOut)
 					RETURN(18);
 
@@ -375,6 +377,7 @@ int main(
 			}
 #endif
 
+			// Composition
 			if (	pDecTree_recon->synthesizeBand()	)
 				RETURN(205);
 
@@ -383,12 +386,22 @@ int main(
 			{
 				component comp = (component) compnum;
 				double psnr = decTree::getSubPSNR(pDecTree_original, pDecTree_recon, comp);
-				fprintf(log_short[0], "\t%.3f", psnr);
+				fprintf(log_general[0], "\t%.3f", psnr);
 			}
-			fprintf(log_short[0],"\n");
+			fprintf(log_general[0],"\n");
+
+#ifdef PRINT_SEPARATE_BANDS 
+			for (int compnum=0; compnum<3; compnum++)
+				fprintf(log_entropy[compnum],"%25s\t%8.4f%s\n", 
+						bitmap_name, quantStep, str_buffer[compnum]); 
+			for (int compnum=0; compnum<3; compnum++)
+				fprintf(log_psnr[compnum],"%25s\t%8.4f%s\n", 
+						bitmap_name, quantStep, str_buffer[3+compnum]); 
+#endif
 
 #ifdef RESTORED_IMAGE_OUTPUT
 			{	
+				// Reconstruced image
 				cImageYCbCr * pImage_r=pDecTree_recon->createImage(false);
 				if (!pImage_r)
 					RETURN(21);
@@ -398,7 +411,7 @@ int main(
 				cImageYCbCr *pDiff = cImageYCbCr::difference(pImage_o, pImage_r, multdif);
 				if (!pDiff)
 					RETURN(22);
-				cImageRGB *pOutR = pImage_r->CreateRGB24FromYCbCr420();
+				cImageRGB *pOutR = pImage_r->CreateRGB24FromYCbCr();
 				if (!pOutR)
 					RETURN(23);
 
@@ -412,7 +425,17 @@ int main(
 				i = pOutR->WriteToBitmapFile(restored_name);
 				if (i)
 					RETURN(250 + i);
-				cImageRGB *pOutD = pDiff->CreateRGB24FromYCbCr420();
+/*				// ...
+			   	sprintf(restored_name, "%s/%s_%.3f.jpeg", 
+						restored_dir, bitmap_name, quantStep);
+				i = pOutR->WriteToJpegFile(restored_name, 100);
+				if (i)
+					RETURN(255 + i);
+				// ...
+*/
+
+				// Difference of images
+				cImageRGB *pOutD = pDiff->CreateRGB24FromYCbCr();
 				if (!pOutD)
 					RETURN(26);
 				char diff_name[128], diff_dir[128];
@@ -432,11 +455,18 @@ int main(
 			}
 #endif
 
-			for (int k=0; k<1; k++)
-				fclose(log_short[k]);
-
 			delete pDecTree_recon;
 		}
+
+		for (int k=0; k<1; k++)
+			fclose(log_general[k]);
+#ifdef PRINT_SEPARATE_BANDS
+		for (int k=0; k<3; k++)
+		{
+			fclose(log_entropy[k]);
+			fclose(log_psnr[k]);
+		}
+#endif
 
 		delete pImage_o;
 		delete pDecTree;

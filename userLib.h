@@ -1,6 +1,7 @@
 #pragma once
 #include "cFilter.h"
 #include "define.h"
+
 #include <math.h>
 #include <stdio.h>
 #include <iostream>
@@ -31,7 +32,11 @@ unsigned int * distribution(short * array, int size);
 double entropy(short * array, int size);
 void comp_entropy(short ** coeff_orig, short ** coeff_pred, int * coeff_pred_ln, short ** ref_sampl, int * ref_sampl_ln, short ** coeff_recon, int * skip_blk, int * total_blk, int * sub_width, int * sub_height, short ** pred_modes, short ** skip_flags, int ** split_blocks, int * split_depth, int * split_total, double * split_ent,  int BlockSize, int totalBands, FILE *log_p, FILE *log_short);
 void comp_psnr(double * error, int totalBands, FILE * log_short);
-int formOutput(char * output_dir_name, const char * bitmap_name, double quantStep, int totalBands, FILE ** log_this);
+int formOutput(char * output_dir_name, 
+		FILE ** log_short, FILE ** log_energy, FILE ** log_entropy, FILE ** log_psnr, 
+		int totalBands, char ** band_names);
+int formFile(FILE *& fd, char * name, int totalBands, char ** band_names, int pause = 0);
+int getMaxLength(char ** strings, int string_number);
 double psnr(short * original, short * distorted, int size);
 short * difference(short * a, short * b, int size);
 // GV - 30.05.18 //
