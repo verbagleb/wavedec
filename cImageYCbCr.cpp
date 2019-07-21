@@ -452,11 +452,14 @@ cImageRGB* cImageYCbCr::CreateRGB24FromYCbCr()
 	
 	int i, j, k, l;
 
-	unsigned char * p = pY0;
-	unsigned char * p1 = pCr0;
-	unsigned char * p2 = pCb0;
-	unsigned char * pp = pRGB + ret->iWidthRGB()*(iImageHeight - 1);
-	for (j = 0; j < iImageHeight / 2 * 2; j += 2, p += iFullWidth * 2, pp -= ret->iWidthRGB() * 2, p1 += iFullWidth2 * 2 / iSubH, p2 += iFullWidth2 * 2 / iSubH)
+	unsigned char * p;
+	unsigned char * p1;
+	unsigned char * p2;
+	unsigned char * pp; // = pRGB + ret->iWidthRGB()*(iImageHeight - 1);
+	for (	j = 0, p = pY0, p1 = pCr0, p2 = pCb0, pp = pRGB;
+			j < iImageHeight / 2 * 2; 
+			j += 2, p += iFullWidth * 2, pp += ret->iWidthRGB() * 2, p1 += iFullWidth2 * 2 / iSubH, 
+				p2 += iFullWidth2 * 2 / iSubH)
 	{
 		for (i = 0, k = 0, l = 0; i < iImageWidth / 2 * 2; i += 2, k += 2 / iSubW, l += 6)
 		{
@@ -496,18 +499,18 @@ cImageRGB* cImageYCbCr::CreateRGB24FromYCbCr()
 			default:
 				return nullptr;
 			}
-			pp[l] = BFromYCbCr(Y1, Cb1, Cr1);
+			pp[l] = RFromYCbCr(Y1, Cb1, Cr1);
 			pp[l + 1] = GFromYCbCr(Y1, Cb1, Cr1);
-			pp[l + 2] = RFromYCbCr(Y1, Cb1, Cr1);
-			pp[l + 3] = BFromYCbCr(Y2, Cb2, Cr2);
+			pp[l + 2] = BFromYCbCr(Y1, Cb1, Cr1);
+			pp[l + 3] = RFromYCbCr(Y2, Cb2, Cr2);
 			pp[l + 4] = GFromYCbCr(Y2, Cb2, Cr2);
-			pp[l + 5] = RFromYCbCr(Y2, Cb2, Cr2);
-			pp[l - ret->iWidthRGB()] = BFromYCbCr(Y3, Cb3, Cr3);
-			pp[l - ret->iWidthRGB() + 1] = GFromYCbCr(Y3, Cb3, Cr3);
-			pp[l - ret->iWidthRGB() + 2] = RFromYCbCr(Y3, Cb3, Cr3);
-			pp[l - ret->iWidthRGB() + 3] = BFromYCbCr(Y4, Cb4, Cr4);
-			pp[l - ret->iWidthRGB() + 4] = GFromYCbCr(Y4, Cb4, Cr4);
-			pp[l - ret->iWidthRGB() + 5] = RFromYCbCr(Y4, Cb4, Cr4);
+			pp[l + 5] = BFromYCbCr(Y2, Cb2, Cr2);
+			pp[l + ret->iWidthRGB()] = RFromYCbCr(Y3, Cb3, Cr3);
+			pp[l + ret->iWidthRGB() + 1] = GFromYCbCr(Y3, Cb3, Cr3);
+			pp[l + ret->iWidthRGB() + 2] = BFromYCbCr(Y3, Cb3, Cr3);
+			pp[l + ret->iWidthRGB() + 3] = RFromYCbCr(Y4, Cb4, Cr4);
+			pp[l + ret->iWidthRGB() + 4] = GFromYCbCr(Y4, Cb4, Cr4);
+			pp[l + ret->iWidthRGB() + 5] = BFromYCbCr(Y4, Cb4, Cr4);
 		}
 		if (i < iImageWidth)		// if iFullWidth is odd
 		{
@@ -531,12 +534,12 @@ cImageRGB* cImageYCbCr::CreateRGB24FromYCbCr()
 			default:
 				return nullptr;
 			}
-			pp[l] = BFromYCbCr(Y1, Cb1, Cr1);
+			pp[l] = RFromYCbCr(Y1, Cb1, Cr1);
 			pp[l + 1] = GFromYCbCr(Y1, Cb1, Cr1);
-			pp[l + 2] = RFromYCbCr(Y1, Cb1, Cr1);
-			pp[l - ret->iWidthRGB()] = BFromYCbCr(Y3, Cb3, Cr3);
-			pp[l - ret->iWidthRGB() + 1] = GFromYCbCr(Y3, Cb3, Cr3);
-			pp[l - ret->iWidthRGB() + 2] = RFromYCbCr(Y3, Cb3, Cr3);
+			pp[l + 2] = BFromYCbCr(Y1, Cb1, Cr1);
+			pp[l + ret->iWidthRGB()] = RFromYCbCr(Y3, Cb3, Cr3);
+			pp[l + ret->iWidthRGB() + 1] = GFromYCbCr(Y3, Cb3, Cr3);
+			pp[l + ret->iWidthRGB() + 2] = BFromYCbCr(Y3, Cb3, Cr3);
 		}
 	}
 	if (j < iImageHeight)			// if iFullHeight is odd
@@ -563,12 +566,12 @@ cImageRGB* cImageYCbCr::CreateRGB24FromYCbCr()
 			default:
 				return nullptr;
 			}
-			pp[l] = BFromYCbCr(Y1, Cb1, Cr1);
+			pp[l] = RFromYCbCr(Y1, Cb1, Cr1);
 			pp[l + 1] = GFromYCbCr(Y1, Cb1, Cr1);
-			pp[l + 2] = RFromYCbCr(Y1, Cb1, Cr1);
-			pp[l + 3] = BFromYCbCr(Y2, Cb2, Cr2);
+			pp[l + 2] = BFromYCbCr(Y1, Cb1, Cr1);
+			pp[l + 3] = RFromYCbCr(Y2, Cb2, Cr2);
 			pp[l + 4] = GFromYCbCr(Y2, Cb2, Cr2);
-			pp[l + 5] = RFromYCbCr(Y2, Cb2, Cr2);
+			pp[l + 5] = BFromYCbCr(Y2, Cb2, Cr2);
 		}
 		if (i < iImageWidth)		// if both iFullHeight and iFullWidth are odd
 		{
@@ -576,9 +579,9 @@ cImageRGB* cImageYCbCr::CreateRGB24FromYCbCr()
 			int Cr1, Cb1;
 			Cr1 = p1[k];
 			Cb1 = p2[k];
-			pp[l] = BFromYCbCr(Y1, Cb1, Cr1);
+			pp[l] = RFromYCbCr(Y1, Cb1, Cr1);
 			pp[l + 1] = GFromYCbCr(Y1, Cb1, Cr1);
-			pp[l + 2] = RFromYCbCr(Y1, Cb1, Cr1);
+			pp[l + 2] = BFromYCbCr(Y1, Cb1, Cr1);
 		}
 	}
 

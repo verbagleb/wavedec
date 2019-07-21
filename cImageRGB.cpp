@@ -85,26 +85,32 @@ int cImageRGB::CreateFromBitmapFile(const char * filename, int *picWidth, int *p
 			iWidth = bmih.biWidth;
 			iHeight = bmih.biHeight;
 
-			if (pRGB)
-				delete[] pRGB;
-			pRGB = new unsigned char[iSizeRGB()];
-			if (!pRGB)
+			unsigned char * pBGR = new unsigned char[iSizeRGB()];
+			if (!pBGR)
 			{
 				fclose(fp);
 				return 5;
 			}
 
-			if ((i=fread(pRGB, 1, iSizeRGB(), fp)) < iSizeRGB())
+			if ((fread(pBGR, 1, iSizeRGB(), fp)) < iSizeRGB())
 			{
 				fclose(fp);
 				return 6;
 			}
 
 			fclose(fp);
+
+			if (pRGB)
+				delete[] pRGB;
+			pRGB = getReverse(pBGR);
+			delete[] pBGR;
+			if (!pRGB)
+				return 7;
 		}
 		else
 		{
 			cerr << "Unsupported set of .bmp parameters\n";
+			fclose(fp);
 			return 4;
 		}
 	}
@@ -119,6 +125,74 @@ int cImageRGB::CreateFromBitmapFile(const char * filename, int *picWidth, int *p
 	return 0;
 }
 
+// Creation from JPEG with standard settings
+int cImageRGB::CreateFromJpegFile(const char * filename, int *picWidth, int *picHeight)
+{
+	cout << "Reading a picture from " << filename << "... ";
+	FILE * fd = fopen(filename, "rb");
+	if (!fd)
+		return 1;
+
+    struct jpeg_decompress_struct cinfo;
+    struct jpeg_error_mgr jerr;
+    cinfo.err = jpeg_std_error(&jerr);
+    jpeg_create_decompress(&cinfo);
+
+	jpeg_stdio_src(&cinfo, fd);
+
+	jpeg_read_header(&cinfo, TRUE);
+
+	// Change parameters?
+/*	cinfo.image_width=iWidth;
+	cinfo.image_height=iHeight;
+	cinfo.input_components=3;
+	cinfo.in_color_space=JCS_RGB;
+*/
+
+	jpeg_start_decompress(&cinfo);
+
+	if (cinfo.out_color_components!=3 || cinfo.output_components!=3 ||
+			cinfo.actual_number_of_colors!=0 || cinfo.out_color_space!=JCS_RGB)
+	{
+		cerr << "\nUnsupported set of .jpeg parameters:\n";
+		if (cinfo.out_color_components!=3)
+			cerr << "out_color_components = " << cinfo.out_color_components << endl;
+		if (cinfo.output_components!=3)
+			cerr << "output_components = " << cinfo.out_color_components << endl;
+		if (cinfo.actual_number_of_colors!=0)
+			cerr << "actual_number_of_colors = " << cinfo.actual_number_of_colors << endl;
+		if (cinfo.out_color_space!=JCS_RGB)
+			cerr << "out_color_space = " << cinfo.out_color_space << endl;
+		fclose(fd);
+		return 4;
+	}
+
+	iWidth = cinfo.output_width;
+	iHeight = cinfo.output_height;
+
+	if (pRGB)
+		delete[] pRGB;
+	pRGB = new unsigned char[iSizeRGB()];
+	if (!pRGB)
+		return 2;
+
+    JSAMPROW row_pointer[1];
+    int row_stride;
+
+    row_stride = cinfo.image_width*3;
+
+    while (cinfo.output_scanline < cinfo.output_height) {
+        row_pointer[0]=(JSAMPLE *)(pRGB+cinfo.output_scanline*row_stride);
+        jpeg_read_scanlines(&cinfo, row_pointer, 1);
+	}
+
+	jpeg_finish_decompress(&cinfo);
+	jpeg_destroy_decompress(&cinfo);
+
+	fclose(fd);
+	cout << "Success" << endl;
+	return 0;	
+}
 
 cImageYCbCr* cImageRGB::CreateYCrCbFromRGB(int iSubW, int iSubH)
 {
@@ -142,29 +216,33 @@ cImageYCbCr* cImageRGB::CreateYCrCbFromRGB(int iSubW, int iSubH)
 	memset(pCr0, 128, iSize2);
 	memset(pCb0, 128, iSize2);
 	
-	unsigned char * p = pY0;
-	unsigned char * p1 = pCr0;
-	unsigned char * p2 = pCb0;
-	unsigned char * pp2 = pRGB + iWidthRGB()*(iHeight - 2);
-	unsigned char * pp1 = pRGB + iWidthRGB()*(iHeight - 1);
+	unsigned char * p;
+	unsigned char * p1;
+	unsigned char * p2;
+	unsigned char * pp2; //= pRGB + iWidthRGB()*(iHeight - 2);
+	unsigned char * pp1; //= pRGB + iWidthRGB()*(iHeight - 1);
 	int i, j, k, l;
-	for (i = 0; i < iHeight / 2 * 2; i += 2, pp1 -= iWidthRGB() * 2, pp2 -= iWidthRGB() * 2,
-		p += iWidth * 2, p1 += iWidth2 * 2 / iSubH, p2 += iWidth2 * 2 / iSubH)
+	for (	i = 0, pp1 = pRGB, pp2 = pRGB + iWidthRGB(), p = pY0, p1 = pCr0, p2 = pCb0;
+			i < iHeight / 2 * 2; 
+			i += 2, pp1 += iWidthRGB() * 2, pp2 += iWidthRGB() * 2, 
+				p += iWidth * 2, p1 += iWidth2 * 2 / iSubH, p2 += iWidth2 * 2 / iSubH)
 	{
-		for (j = 0, k = 0, l = 0; j < iWidth / 2 * 2; j += 2, k += 6, l += 2 / iSubW)
+		for (	j = 0, k = 0, l = 0; 
+				j < iWidth / 2 * 2; 
+				j += 2, k += 6, l += 2 / iSubW)
 		{
-			int B1 = pp1[k];
+			int R1 = pp1[k];
 			int G1 = pp1[k + 1];
-			int R1 = pp1[k + 2];
-			int B2 = pp1[k + 3];
+			int B1 = pp1[k + 2];
+			int R2 = pp1[k + 3];
 			int G2 = pp1[k + 4];
-			int R2 = pp1[k + 5];
-			int B3 = pp2[k];
+			int B2 = pp1[k + 5];
+			int R3 = pp2[k];
 			int G3 = pp2[k + 1];
-			int R3 = pp2[k + 2];
-			int B4 = pp2[k + 3];
+			int B3 = pp2[k + 2];
+			int R4 = pp2[k + 3];
 			int G4 = pp2[k + 4];
-			int R4 = pp2[k + 5];
+			int B4 = pp2[k + 5];
 			int Y1 = YFromRGB(R1, G1, B1);
 			int Y2 = YFromRGB(R2, G2, B2);
 			int Y3 = YFromRGB(R3, G3, B3);
@@ -215,12 +293,12 @@ cImageYCbCr* cImageRGB::CreateYCrCbFromRGB(int iSubW, int iSubH)
 		}
 		if (j < iWidth)		// if iFullWidth is odd
 		{
-			int B1 = pp1[k];
+			int R1 = pp1[k];
 			int G1 = pp1[k + 1];
-			int R1 = pp1[k + 2];
-			int B3 = pp2[k];
+			int B1 = pp1[k + 2];
+			int R3 = pp2[k];
 			int G3 = pp2[k + 1];
-			int R3 = pp2[k + 2];
+			int B3 = pp2[k + 2];
 			int Y1 = YFromRGB(R1, G1, B1);
 			int Y3 = YFromRGB(R3, G3, B3);
 			int Cr1 = CrFromRGB(R1, G1, B1);
@@ -252,12 +330,12 @@ cImageYCbCr* cImageRGB::CreateYCrCbFromRGB(int iSubW, int iSubH)
 	{
 		for (j = 0, k = 0, l = 0; j < iWidth / 2 * 2; j += 2, k += 6, l += 2 / iSubW)
 		{
-			int B1 = pp1[k];
+			int R1 = pp1[k];
 			int G1 = pp1[k + 1];
-			int R1 = pp1[k + 2];
-			int B2 = pp1[k + 3];
+			int B1 = pp1[k + 2];
+			int R2 = pp1[k + 3];
 			int G2 = pp1[k + 4];
-			int R2 = pp1[k + 5];
+			int B2 = pp1[k + 5];
 			int Y1 = YFromRGB(R1, G1, B1);
 			int Y2 = YFromRGB(R2, G2, B2);
 			int Cr1 = CrFromRGB(R1, G1, B1);
@@ -286,9 +364,9 @@ cImageYCbCr* cImageRGB::CreateYCrCbFromRGB(int iSubW, int iSubH)
 		}
 		if (j < iWidth)		// if both iFullHeight and iFullWidth are odd
 		{
-			int B1 = pp1[k];
+			int R1 = pp1[k];
 			int G1 = pp1[k + 1];
-			int R1 = pp1[k + 2];
+			int B1 = pp1[k + 2];
 			int Y1 = YFromRGB(R1, G1, B1);
 			int Cr1 = CrFromRGB(R1, G1, B1);
 			int Cb1 = CbFromRGB(R1, G1, B1);
@@ -375,33 +453,7 @@ int cImageRGB::ceilTo(int number, int base, int remainder)
 {
 	return (number + base - 1 - remainder) / base*base + remainder;
 }
-/*
-void cImage::Normalize(int iNumBands, int * pFilterLength, double ** pFilters, double * mult, int * add, int iEvenOdd)
-{
-	// Нормировка фильтров для одинакового квантования
-	double dSum;
-	int j;
-	for (int k = 0; k < iNumBands; k++)
-	{
-		dSum = pFilters[iNumBands + k][0] * pFilters[iNumBands + k][0] * (iEvenOdd ? 1 : 2);
-		for (j = 1; j < pFilterLength[iNumBands + k]; j++)
-			dSum += 2 * pFilters[iNumBands + k][j] * pFilters[iNumBands + k][j];
-		dSum = sqrt(dSum);
-		pFilters[iNumBands + k][0] /= (dSum);
-		for (j = 1; j < pFilterLength[iNumBands + k]; j++)
-			pFilters[iNumBands + k][j] /= (dSum);
-		pFilters[k][0] *= dSum;
-		for (j = 1; j < pFilterLength[k]; j++)
-			pFilters[k][j] *= dSum;
-	}
-	// Коэффициент нормирования низкочастотной области для отображения
-	dSum = pFilters[0][0] * (iEvenOdd ? 1 : 2);
-	for (int i = 1; i < pFilterLength[0]; i++)
-		dSum += 2 * pFilters[0][i];
-	mult[0] = 1.0 / (dSum*dSum);
-	add[0] = 0;
-}
-*/
+
 cImageRGB* cImageRGB::Copy()
 {
 	cImageRGB *copy = new cImageRGB;
@@ -433,6 +485,8 @@ int cImageRGB::WriteToBitmapFile(char * filename)
 
 	if (!pRGB)
 		return 1;
+
+	unsigned char * pBGR = getReverse(pRGB);
 
 	fp = fopen(filename, "wb");
 	if (fp)
@@ -466,7 +520,7 @@ int cImageRGB::WriteToBitmapFile(char * filename)
 			return 4;
 		}
 
-		if (fwrite(pRGB, 1, iSizeRGB(), fp) < iSizeRGB())
+		if (fwrite(pBGR, 1, iSizeRGB(), fp) < iSizeRGB())
 		{
 			fclose(fp);
 			return 5;
@@ -477,7 +531,91 @@ int cImageRGB::WriteToBitmapFile(char * filename)
 	else
 		return 2;
 	
+	delete[] pBGR;
 	cout << "Success" << endl;
 	return 0;
 }
 
+// Saving to JPEG with standard settings
+int cImageRGB::WriteToJpegFile( char* filename, int quality )
+{
+	cout << "Writing the picture to " << filename << "... ";
+	FILE * fd = fopen(filename, "wb");
+	if (!fd)
+		return 1;
+
+    struct jpeg_compress_struct cinfo;
+    struct jpeg_error_mgr jerr;
+    cinfo.err = jpeg_std_error(&jerr);
+    jpeg_create_compress(&cinfo);
+
+	jpeg_stdio_dest(&cinfo, fd);
+
+	cinfo.image_width=iWidth;
+	cinfo.image_height=iHeight;
+	cinfo.input_components=3;
+	cinfo.in_color_space=JCS_RGB;
+
+	jpeg_set_defaults(&cinfo);
+	jpeg_set_quality(&cinfo, quality, true);
+	jpeg_start_compress(&cinfo, TRUE);
+
+    JSAMPROW row_pointer[1];
+    int row_stride;
+
+    row_stride = cinfo.image_width*3;
+
+    while (cinfo.next_scanline < cinfo.image_height) {
+        row_pointer[0]=(JSAMPLE *)(pRGB+cinfo.next_scanline*row_stride);
+        jpeg_write_scanlines(&cinfo, row_pointer, 1);
+	}
+
+	jpeg_finish_compress(&cinfo);
+	jpeg_destroy_compress(&cinfo);
+
+	fclose(fd);
+	cout << "Success" << endl;
+	return 0;	
+}
+
+unsigned char* cImageRGB::getReverse(unsigned char* pRGB)
+{
+	if (!pRGB)
+	{
+		cerr << __func__ << ": Null argument passed" << endl;
+		return nullptr;
+	}
+	bool flag;
+	int iWidthRGB = this->iWidthRGB();
+	unsigned char * new_pRGB = new unsigned char[iSizeRGB()];
+	if (!new_pRGB)
+	{
+		perror(__func__);
+		return nullptr;
+	}
+	for (int i = 0; i < iHeight; i++)
+		for (int j = 0; j < iWidth; j++) {
+			new_pRGB[(iHeight-1-i)*iWidthRGB + 3*j + 0] = pRGB[i*iWidthRGB + 3*j + 2];
+			new_pRGB[(iHeight-1-i)*iWidthRGB + 3*j + 1] = pRGB[i*iWidthRGB + 3*j + 1];
+			new_pRGB[(iHeight-1-i)*iWidthRGB + 3*j + 2] = pRGB[i*iWidthRGB + 3*j + 0];
+			flag = (iHeight-1-i)*iWidthRGB + 3*j + 2 < iSizeRGB();
+		}
+
+	return new_pRGB;
+}
+
+extension_t cImageRGB::extract_extension(const char * filename)
+{
+	for (const char * p = filename+strlen(filename)-1; p>=filename; p--)
+		if (*p == '.') {
+			if (!strcasecmp(p+1, "bmp"))
+				return BMP;
+			else if (!strcasecmp(p+1, "jpeg") || !strcasecmp(p+1, "jpg"))
+				return JPEG;
+			else if (!strcasecmp(p+1, "png"))
+				return PNG;
+			else 
+				return OTHER;
+		}
+	return NOTYPE;
+}

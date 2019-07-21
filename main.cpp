@@ -64,7 +64,7 @@ int main(
 
 	const char config_name[] = "filters.cfg";
 	const char grid_name[] = "parameters.cfg";
-	const char bitmap_dir[]="images/";
+	const char image_dir[]="images/";
 	char output_dir_name[128] = ""; // Let it find a new value
 
 	int i;
@@ -90,9 +90,9 @@ int main(
 
 	for (int image_index=0; image_index < images_number; image_index++)
 	{
-		const char * bitmap_name = images_array[image_index];
-		char bitmap_dir_name[128] = "";
-		sprintf(bitmap_dir_name, "%s%s", bitmap_dir, bitmap_name);
+		const char * image_name = images_array[image_index];
+		char image_dir_name[128] = "";
+		sprintf(image_dir_name, "%s%s", image_dir, image_name);
 
 		cImageRGB * pImageRGB = new cImageRGB;
 		if (!pImageRGB)
@@ -103,14 +103,34 @@ int main(
 		}
 
 		int picWidth, picHeight;
-		i = pImageRGB->CreateFromBitmapFile(bitmap_dir_name, &picWidth, &picHeight);
-		if (i)
+		switch (cImageRGB::extract_extension(image_name))
 		{
-			printf("Error reading bitmap file %s, err_num = %i !\n", bitmap_dir_name, i);
-			delete pImageRGB;
-			pImageRGB = nullptr;
-			delete[] pFilter;
-			RETURN(4);
+			case BMP:
+				if (int i = pImageRGB->CreateFromBitmapFile(image_dir_name, &picWidth, &picHeight))
+				{
+					printf("Error reading bitmap file %s, err_num = %i !\n", image_dir_name, i);
+					delete pImageRGB;
+					pImageRGB = nullptr;
+					delete[] pFilter;
+					RETURN(4);
+				}
+				break;
+			case JPEG:
+				if (int i = pImageRGB->CreateFromJpegFile(image_dir_name, &picWidth, &picHeight))
+				{
+					printf("Error reading jpeg file %s, err_num = %i !\n", image_dir_name, i);
+					delete pImageRGB;
+					pImageRGB = nullptr;
+					delete[] pFilter;
+					RETURN(4);
+				}
+				break;
+			case PNG:
+				break;
+			case OTHER:
+				error(1, 0, "Unknown extension");
+			case NOTYPE:
+				error(1, 0, "No extension");
 		}
 
 		cImageYCbCr *pImage_o = pImageRGB->CreateYCrCbFromRGB(iSubW, iSubH);
@@ -247,7 +267,7 @@ int main(
 		for (int qs_index = 0; qs_index < qs_number; qs_index++)
 		{
 			double quantStep = qs_array[qs_index];
-			fprintf(log_general[0],"%s\t%.2f", bitmap_name, quantStep);
+			fprintf(log_general[0],"%s\t%.2f", image_name, quantStep);
 
 			if (qs_index == 0)
 			{
@@ -259,7 +279,7 @@ int main(
 					component comp = (component) compnum;
 					double energy_original = decTree::getSubEnergy(pDecTree_original, comp);
 
-					fprintf(log_energy[compnum], "%19s (rms)", bitmap_name);
+					fprintf(log_energy[compnum], "%19s (rms)", image_name);
 					decTree::getAllEnergy(energy, pDecTree, comp);
 					double sum_sqrt = 0, sum = 0;
 					for (int i=0; i<totalBands; i++)
@@ -281,7 +301,7 @@ int main(
 				delete[] energy;
 			}
 
-			cout << bitmap_name << " " << quantStep << endl;
+			cout << image_name << " " << quantStep << endl;
 
 			// For storing dequantized
 			decTree * pDecTree_recon = new decTree;
@@ -367,7 +387,7 @@ int main(
 				if (i && errno!=EEXIST)
 					error(19, errno, "Restored directory");
 			   	sprintf(bands_name, "%s/%s_%.3f_bands.bmp", 
-						bands_dir, bitmap_name, quantStep);
+						bands_dir, image_name, quantStep);
 				i = pOut->WriteToBitmapFile(bands_name);
 				if (i)
 					RETURN(200 + i);
@@ -393,10 +413,10 @@ int main(
 #ifdef PRINT_SEPARATE_BANDS 
 			for (int compnum=0; compnum<3; compnum++)
 				fprintf(log_entropy[compnum],"%25s\t%8.4f%s\n", 
-						bitmap_name, quantStep, str_buffer[compnum]); 
+						image_name, quantStep, str_buffer[compnum]); 
 			for (int compnum=0; compnum<3; compnum++)
 				fprintf(log_psnr[compnum],"%25s\t%8.4f%s\n", 
-						bitmap_name, quantStep, str_buffer[3+compnum]); 
+						image_name, quantStep, str_buffer[3+compnum]); 
 #endif
 
 #ifdef RESTORED_IMAGE_OUTPUT
@@ -421,18 +441,18 @@ int main(
 				if (i && errno!=EEXIST)
 					error(24, errno, "Restored directory");
 			   	sprintf(restored_name, "%s/%s_%.3f.bmp", 
-						restored_dir, bitmap_name, quantStep);
+						restored_dir, image_name, quantStep);
 				i = pOutR->WriteToBitmapFile(restored_name);
 				if (i)
 					RETURN(250 + i);
-/*				// ...
+				// ...
 			   	sprintf(restored_name, "%s/%s_%.3f.jpeg", 
-						restored_dir, bitmap_name, quantStep);
+						restored_dir, image_name, quantStep);
 				i = pOutR->WriteToJpegFile(restored_name, 100);
 				if (i)
 					RETURN(255 + i);
 				// ...
-*/
+
 
 				// Difference of images
 				cImageRGB *pOutD = pDiff->CreateRGB24FromYCbCr();
@@ -444,7 +464,7 @@ int main(
 				if (i && errno!=EEXIST)
 					error(27, errno, "Restored directory");
 			   	sprintf(diff_name, "%s/%s_%.2f.bmp", 
-						diff_dir, bitmap_name, quantStep);
+						diff_dir, image_name, quantStep);
 				i = pOutD->WriteToBitmapFile(diff_name);
 				if (i)
 					RETURN(280 + i);

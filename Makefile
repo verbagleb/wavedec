@@ -2,13 +2,13 @@ PLATFORM=linux
 
 SOURCES_CPP=main.cpp cImageYCbCr.cpp cImageRGB.cpp decTree.cpp userLib.cpp cFilter.cpp
 SOURCES_C=
-FLAGS= -O3 -fdiagnostics-color=always \
+FLAGS= -g3 -fdiagnostics-color=always \
       -DBAND_IMAGE_OUTPUT \
       -DRESTORED_IMAGE_OUTPUT \
 	  -DPRINT_SEPARATE_BANDS \
       # \
       #
-LFLAGS=#`gsl-config --cflags --libs`
+LFLAGS=-ljpeg #`gsl-config --cflags --libs`
 CPPFLAGS= 
 CFLAGS=#`pkg-config --libs gsl` 
 #HEADERS=$(SOURCES_CPP:.cpp=.h) $(SOURCES_C:.c=.h) define.h
