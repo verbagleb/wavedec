@@ -196,6 +196,7 @@ exit_jpeg:
 	return 0;	
 }
 
+#ifndef NOPNG
 // Creation from PNG
 int cImageRGB::CreateFromPngFile(const char * filename, int *picWidth, int *picHeight)
 {
@@ -294,6 +295,7 @@ exit_png:
 	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
 	return 0;	
 }
+#endif
 
 cImageYCbCr* cImageRGB::CreateYCrCbFromRGB(int iSubW, int iSubH)
 {
@@ -679,6 +681,7 @@ int cImageRGB::WriteToJpegFile( char* filename, int quality )
 	return 0;	
 }
 
+#ifndef NOPNG
 // Saving to PNG with standard settings
 int cImageRGB::WriteToPngFile( char* filename )
 {
@@ -743,6 +746,7 @@ int cImageRGB::WriteToPngFile( char* filename )
 	cout << "Success" << endl;
 	return 0;	
 }
+#endif
 
 unsigned char* cImageRGB::getReverse(unsigned char* pRGB)
 {

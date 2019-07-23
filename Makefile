@@ -1,4 +1,4 @@
-PLATFORM=linux
+PLATFORM=w32
 
 SOURCES_CPP=main.cpp cImageYCbCr.cpp cImageRGB.cpp decTree.cpp userLib.cpp cFilter.cpp
 SOURCES_C=
@@ -7,6 +7,7 @@ FLAGS= -O3 -fdiagnostics-color=always \
       -DRESTORED_IMAGE_OUTPUT \
 	  -DPRINT_SEPARATE_BANDS \
 	  -DOUT_BMP \
+	  -DNOPNG \
       # \
 	  -DOUT_JPEG \
 	  -DOUT_PNG \

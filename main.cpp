@@ -125,6 +125,7 @@ int main(
 					RETURN(4);
 				}
 				break;
+#ifndef NOPNG
 			case PNG:
 				if (int i = pImageRGB->CreateFromPngFile(image_dir_name, &picWidth, &picHeight))
 				{
@@ -135,10 +136,13 @@ int main(
 					RETURN(4);
 				}
 				break;
+#endif
 			case OTHER:
 				error(1, 0, "Unknown extension");
 			case NOTYPE:
 				error(1, 0, "No extension");
+			default:
+				error(1, 0, "Type error");
 		}
 
 		cImageYCbCr *pImage_o = pImageRGB->CreateYCrCbFromRGB(iSubW, iSubH);
