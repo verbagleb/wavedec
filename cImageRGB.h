@@ -7,6 +7,7 @@
 extern "C" {
 #include <jpeglib.h>
 }
+#include <png.h>
 
 #include "define.h"
 #include "cImageYCbCr.h"
@@ -45,6 +46,7 @@ public:
 public:
 	int CreateFromBitmapFile(const char * filename, int *picWidth = NULL, int *picHeight = NULL);
 	int CreateFromJpegFile(const char * filename, int *picWidth = NULL, int *picHeight = NULL);
+	int CreateFromPngFile(const char * filename, int *picWidth = NULL, int *picHeight = NULL);
 	cImageYCbCr* CreateYCrCbFromRGB(int iSubW = 1, int iSubH = 1);
 public:
 	static int YFromRGB(int iR, int iG, int iB);
@@ -60,6 +62,7 @@ private:
 public:
 	int WriteToBitmapFile(char * filename);
 	int WriteToJpegFile(char * filename, int quality);
+	int WriteToPngFile(char * filename);
 	//static void Normalize(int iNumBands, int * pFilterLength, double** pFilters, double * mult, int * add, int iEvenOdd);
 	cImageRGB* Copy();
 	unsigned char* getReverse(unsigned char* pRGB);

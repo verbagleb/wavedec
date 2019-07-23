@@ -162,9 +162,9 @@ int cImageRGB::CreateFromJpegFile(const char * filename, int *picWidth, int *pic
 		if (cinfo.actual_number_of_colors!=0)
 			cerr << "actual_number_of_colors = " << cinfo.actual_number_of_colors << endl;
 		if (cinfo.out_color_space!=JCS_RGB)
-			cerr << "out_color_space = " << cinfo.out_color_space << endl;
-		fclose(fd);
-		return 4;
+			cerr << "out_color_space = " << cinfo.out_color_space << 
+				" (RGB is " << JCS_RGB << ") " << endl;
+		goto exit_jpeg;
 	}
 
 	iWidth = cinfo.output_width;
@@ -186,11 +186,112 @@ int cImageRGB::CreateFromJpegFile(const char * filename, int *picWidth, int *pic
         jpeg_read_scanlines(&cinfo, row_pointer, 1);
 	}
 
+	cout << "Read an image " << iWidth << "x" << iHeight << endl;
+
+exit_jpeg:
 	jpeg_finish_decompress(&cinfo);
 	jpeg_destroy_decompress(&cinfo);
 
 	fclose(fd);
-	cout << "Success" << endl;
+	return 0;	
+}
+
+// Creation from PNG
+int cImageRGB::CreateFromPngFile(const char * filename, int *picWidth, int *picHeight)
+{
+	cout << "Reading a picture from " << filename << "... ";
+
+	FILE * fp = fopen(filename, "rb");
+	if (!fp) 
+		return 1;
+
+	// Check it's PNG
+	png_size_t number = 8;
+	png_byte header[number];
+
+	if (fread(header, 1, number, fp)!=number)
+		return 2;
+	bool is_png = !png_sig_cmp(header, (png_size_t)0, number);
+	if(!is_png)
+	{
+		cerr << "Not a PNG file" << endl;
+		return 3;
+	}
+
+	// Create png_struct
+    png_structp png_ptr = png_create_read_struct
+        (PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+    if (!png_ptr)
+       return 4;
+
+	// Crete png_info
+    png_infop info_ptr = png_create_info_struct(png_ptr);
+    if (!info_ptr)
+    {
+       png_destroy_read_struct(&png_ptr,
+           (png_infopp)NULL, (png_infopp)NULL);
+       return 5;
+    }
+
+	// Set jump to handler
+    if (setjmp(png_jmpbuf(png_ptr)))
+    {
+       png_destroy_read_struct(&png_ptr, &info_ptr,
+           /*&end_info*/(png_infopp)NULL);
+       fclose(fp);
+       return 6;
+    }
+
+	// Setting input
+	png_init_io(png_ptr, fp);
+
+	// Declare that bytes have been read
+	png_set_sig_bytes(png_ptr, number);
+
+	// Read
+	int png_transforms = 0; //PNG_TRANSFORM_SCALE_16;
+	png_read_png(png_ptr, info_ptr, png_transforms, NULL);
+
+	// Retrieve data	// NORETURN 
+	png_bytep* row_pointers = png_get_rows(png_ptr, info_ptr);
+
+	// Extracting parameters
+	png_uint_32 width, height;
+   	int bit_depth, color_type, interlace_type, compression_type, filter_method;
+	png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth, &color_type,
+		   &interlace_type, &compression_type, &filter_method);	
+
+	if (bit_depth != 8 || color_type != PNG_COLOR_TYPE_RGB)
+	{
+		cerr << "\nUnsupported set of .jpeg parameters:\n";
+		if (bit_depth != 8)
+			cerr << "bit_depth = " << bit_depth << endl;
+		if (color_type != PNG_COLOR_TYPE_RGB)
+			cerr << "color_type = " << color_type << 
+				" (RGB is " << PNG_COLOR_TYPE_RGB << ") " << endl;
+		goto exit_png;
+	}
+	iWidth = (signed) width;
+	iHeight = (signed) height;
+
+	// Creating intrinsic memory
+	if (pRGB)
+		delete[] pRGB;
+	pRGB = new unsigned char[iSizeRGB()];
+	if (!pRGB)
+		return 2;
+
+	// Copy
+	for (int j = 0; j < iHeight; j++)
+		for (int i = 0; i < iWidth*3; i++)
+			pRGB[iWidthRGB()*j + i] = row_pointers[j][i];
+
+	cout << "Read an image " << iWidth << "x" << iHeight << endl;
+
+exit_png:
+	fclose(fp);
+	// Clean
+	png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
 	return 0;	
 }
 
@@ -574,6 +675,71 @@ int cImageRGB::WriteToJpegFile( char* filename, int quality )
 	jpeg_destroy_compress(&cinfo);
 
 	fclose(fd);
+	cout << "Success" << endl;
+	return 0;	
+}
+
+// Saving to PNG with standard settings
+int cImageRGB::WriteToPngFile( char* filename )
+{
+	cout << "Writing the picture to " << filename << "... ";
+	FILE * fp = fopen(filename, "wb");
+	if (!fp)
+		return 1;
+
+	// Create png_struct
+    png_structp png_ptr = png_create_write_struct
+        (PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+    if (!png_ptr)
+       return 4;
+
+	// Crete png_info
+    png_infop info_ptr = png_create_info_struct(png_ptr);
+    if (!info_ptr)
+    {
+       png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
+       return 5;
+    }
+
+	// Set jump to handler
+    if (setjmp(png_jmpbuf(png_ptr)))
+    {
+       png_destroy_write_struct(&png_ptr, &info_ptr);
+       fclose(fp);
+       return 6;
+    }
+
+	// Setting input
+	png_init_io(png_ptr, fp);
+
+	// Setting parameters
+	png_uint_32 width=iWidth, height=iHeight;
+   	int bit_depth = 8, color_type = PNG_COLOR_TYPE_RGB, 
+		interlace_type = PNG_INTERLACE_NONE, 
+		compression_type = PNG_COMPRESSION_TYPE_DEFAULT, 
+		filter_method = PNG_FILTER_TYPE_DEFAULT;
+    png_set_IHDR(png_ptr, info_ptr, width, height,
+       bit_depth, color_type, interlace_type,
+       compression_type, filter_method);
+			
+	// Creating row array
+	// (Copying probably unnecessary)
+	png_bytep row_pointers[iHeight];
+	for (int i = 0; i<iHeight; i++)
+		row_pointers[i] = pRGB+(iWidthRGB()*i);
+	
+	// Set data
+	png_set_rows(png_ptr, info_ptr, row_pointers);
+
+
+	// Write
+	int png_transforms = 0; //PNG_TRANSFORM_SCALE_16;
+	png_write_png(png_ptr, info_ptr, png_transforms, NULL);
+
+	// Clean
+	png_destroy_write_struct(&png_ptr, &info_ptr);
+	fclose(fp);
+
 	cout << "Success" << endl;
 	return 0;	
 }

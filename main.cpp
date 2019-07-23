@@ -126,6 +126,14 @@ int main(
 				}
 				break;
 			case PNG:
+				if (int i = pImageRGB->CreateFromPngFile(image_dir_name, &picWidth, &picHeight))
+				{
+					printf("Error reading png file %s, err_num = %i !\n", image_dir_name, i);
+					delete pImageRGB;
+					pImageRGB = nullptr;
+					delete[] pFilter;
+					RETURN(4);
+				}
 				break;
 			case OTHER:
 				error(1, 0, "Unknown extension");
@@ -440,18 +448,30 @@ int main(
 				i = MKDIR(restored_dir, 0777);
 				if (i && errno!=EEXIST)
 					error(24, errno, "Restored directory");
+#ifdef OUT_BMP
+				// to bmp
 			   	sprintf(restored_name, "%s/%s_%.3f.bmp", 
 						restored_dir, image_name, quantStep);
 				i = pOutR->WriteToBitmapFile(restored_name);
 				if (i)
-					RETURN(250 + i);
-				// ...
+					RETURN(2510 + i);
+#endif
+#ifdef OUT_JPEG
+				// to jpeg 
 			   	sprintf(restored_name, "%s/%s_%.3f.jpeg", 
 						restored_dir, image_name, quantStep);
 				i = pOutR->WriteToJpegFile(restored_name, 100);
 				if (i)
-					RETURN(255 + i);
-				// ...
+					RETURN(2520 + i);
+#endif
+#ifdef OUT_PNG
+				// to png
+			   	sprintf(restored_name, "%s/%s_%.3f.png", 
+						restored_dir, image_name, quantStep);
+				i = pOutR->WriteToPngFile(restored_name);
+				if (i)
+					RETURN(2530 + i);
+#endif
 
 
 				// Difference of images
