@@ -4,9 +4,12 @@
 #include <iostream>
 #include <math.h>
 
+#ifndef NOJPEG
 extern "C" {
 #include <jpeglib.h>
 }
+#endif
+
 #ifndef NOPNG
 #include <png.h>
 #endif
@@ -47,7 +50,9 @@ public:
 
 public:
 	int CreateFromBitmapFile(const char * filename, int *picWidth = NULL, int *picHeight = NULL);
+#ifndef NOJPEG
 	int CreateFromJpegFile(const char * filename, int *picWidth = NULL, int *picHeight = NULL);
+#endif
 #ifndef NOPNG
 	int CreateFromPngFile(const char * filename, int *picWidth = NULL, int *picHeight = NULL);
 #endif
@@ -65,7 +70,9 @@ private:
 	static int Limiting_a_b(double d, int a, int b);
 public:
 	int WriteToBitmapFile(char * filename);
+#ifndef NOJPEG
 	int WriteToJpegFile(char * filename, int quality);
+#endif
 #ifndef NOPNG
 	int WriteToPngFile(char * filename);
 #endif

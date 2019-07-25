@@ -125,6 +125,7 @@ int cImageRGB::CreateFromBitmapFile(const char * filename, int *picWidth, int *p
 	return 0;
 }
 
+#ifndef NOJPEG
 // Creation from JPEG with standard settings
 int cImageRGB::CreateFromJpegFile(const char * filename, int *picWidth, int *picHeight)
 {
@@ -195,6 +196,7 @@ exit_jpeg:
 	fclose(fd);
 	return 0;	
 }
+#endif
 
 #ifndef NOPNG
 // Creation from PNG
@@ -250,7 +252,7 @@ int cImageRGB::CreateFromPngFile(const char * filename, int *picWidth, int *picH
 	png_set_sig_bytes(png_ptr, number);
 
 	// Read
-	int png_transforms = 0; //PNG_TRANSFORM_SCALE_16;
+	int png_transforms = PNG_TRANSFORM_STRIP_ALPHA; //PNG_TRANSFORM_SCALE_16;
 	png_read_png(png_ptr, info_ptr, png_transforms, NULL);
 
 	// Retrieve data	// NORETURN 
@@ -264,7 +266,7 @@ int cImageRGB::CreateFromPngFile(const char * filename, int *picWidth, int *picH
 
 	if (bit_depth != 8 || color_type != PNG_COLOR_TYPE_RGB)
 	{
-		cerr << "\nUnsupported set of .jpeg parameters:\n";
+		cerr << "\nUnsupported set of .png parameters:\n";
 		if (bit_depth != 8)
 			cerr << "bit_depth = " << bit_depth << endl;
 		if (color_type != PNG_COLOR_TYPE_RGB)
@@ -639,6 +641,7 @@ int cImageRGB::WriteToBitmapFile(char * filename)
 	return 0;
 }
 
+#ifndef NOJPEG
 // Saving to JPEG with standard settings
 int cImageRGB::WriteToJpegFile( char* filename, int quality )
 {
@@ -660,7 +663,7 @@ int cImageRGB::WriteToJpegFile( char* filename, int quality )
 	cinfo.in_color_space=JCS_RGB;
 
 	jpeg_set_defaults(&cinfo);
-	jpeg_set_quality(&cinfo, quality, true);
+	jpeg_set_quality(&cinfo, quality, TRUE);
 	jpeg_start_compress(&cinfo, TRUE);
 
     JSAMPROW row_pointer[1];
@@ -680,6 +683,7 @@ int cImageRGB::WriteToJpegFile( char* filename, int quality )
 	cout << "Success" << endl;
 	return 0;	
 }
+#endif
 
 #ifndef NOPNG
 // Saving to PNG with standard settings

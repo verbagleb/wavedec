@@ -115,6 +115,7 @@ int main(
 					RETURN(4);
 				}
 				break;
+#ifndef NOJPEG
 			case JPEG:
 				if (int i = pImageRGB->CreateFromJpegFile(image_dir_name, &picWidth, &picHeight))
 				{
@@ -125,6 +126,7 @@ int main(
 					RETURN(4);
 				}
 				break;
+#endif
 #ifndef NOPNG
 			case PNG:
 				if (int i = pImageRGB->CreateFromPngFile(image_dir_name, &picWidth, &picHeight))
@@ -460,6 +462,7 @@ int main(
 				if (i)
 					RETURN(2510 + i);
 #endif
+#ifndef NOJPEG
 #ifdef OUT_JPEG
 				// to jpeg 
 			   	sprintf(restored_name, "%s/%s_%.3f.jpeg", 
@@ -468,6 +471,8 @@ int main(
 				if (i)
 					RETURN(2520 + i);
 #endif
+#endif
+#ifndef NOPNG
 #ifdef OUT_PNG
 				// to png
 			   	sprintf(restored_name, "%s/%s_%.3f.png", 
@@ -475,6 +480,7 @@ int main(
 				i = pOutR->WriteToPngFile(restored_name);
 				if (i)
 					RETURN(2530 + i);
+#endif
 #endif
 
 

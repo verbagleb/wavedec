@@ -1,0 +1,80 @@
+--- I Параметры сборки (Makefile):
+
+При сборке для выполнения на Linux задать PLATFORM=linux
+Инструкция по сборке для Windows ниже
+
+Флаги:
+-DBAND_IMAGE_OUTPUT - выводить изображение разложения (output/output_N/bands)
+-DRESTORED_OUTPUT - выводить восстановленное изображение (output/output_N/restored) и разницу с исходным (output/output_N/difference_xK)
+-DPRINT_SEPARATE_BANDS - выводить энтропию и psnr по каждой зоне (файлы entropy_X.txt, psnr_X.txt)
+-DOUT_BMP - вывод восстановленных изображений в формате bmp
+-DOUT_JPEG - -/-/- в формате JPEG
+-DOUT_PNG - -/-/- в формате PNG
+
+Чистка:
+./make clean
+
+Сборка:
+./make all
+
+Чистка, включая чистку текстового и визуального вывода:
+./make cleanall
+
+Примечания:
+Требуемые для сборки библиотеки libjpeg, libpng и zlib как правило установлены по умолчанию
+
+
+--- II Инструкция по сборке проекта на Linux для Windows на примере Ubuntu
+
+Всё на примере Linux x64 и Windows x64
+Для Linux x32 менять w64 на w32
+Для Windows x32 менять x86_64 на i686
+
+1. Для кросс-компиляции проекта необходимо установить соответствующий компилятор:
+sudo apt install g++-mingw-w64-x86-64
+sudo apt install g++-mingw-w64 (сразу два пакета для Windows x32 и x64)
+
+2. Установить библиотеку libjpeg: 
+2.1. Скачать архив с крайней версией с http://www.ijg.org/files/
+2.2. Распаковать и зайти в распакованную папку
+2.3. Выполнить следующие команды:
+make distclean
+./configure --host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32/
+2.4. Открыть файл jmorecfg.cfg, заменить строку
+typedef long INT32;
+на строку
+typedef signed int INT32;
+2.5 Выполнить команды:
+make (могут проскочить ошибки с предупреждением, что результат может не работать)
+sudo make install
+
+3. Установить библиотеку libz:
+3.1. Скачать архив с https://www.zlib.net/
+3.2. Распаковать, зайти в распакованную папку
+3.3. Отредактировать значение PREFIX в файле  win32/Makefile.gcc:
+PREFIX = x86_64-w64-mingw32-
+3.4. Выполнить команды:
+make distclean
+BINARY_PATH=/usr/x86_64-w64-mingw32/bin INCLUDE_PATH=/usr/x86_64-w64-mingw32/include LIBRARY_PATH=/usr/x86_64-w64-mingw32/lib make -f win32/Makefile.gcc
+sudo BINARY_PATH=/usr/x86_64-w64-mingw32/bin INCLUDE_PATH=/usr/x86_64-w64-mingw32/include LIBRARY_PATH=/usr/x86_64-w64-mingw32/lib make -f win32/Makefile.gcc install
+ 
+4. Установить библиотеку libpng:
+4.1. Скачать архив с последней версией с https://sourceforge.net/projects/libpng/files/
+4.2. Распаковать, зайти в распакованную папку
+4.3. Выполнить команды:
+make distclean
+./configure --host=x86_64-w64-mingw32 --prefix=/usr/x86_64-w64-mingw32/ 
+sudo make install 
+
+5. Собрать проект
+5.1. Перейти в папку с проектом
+5.2. В Makefile задать PLATFORM=win64 (win32 для Windows x32),
+     BUILD_PLATFORM=w64 (w32 для Linux x32)
+5.3. Выполнить:
+make clean
+make all
+
+6. Положить в папку с исполняемым файлом библиотеку libjpeg-9.dll из папки win64 (win32).
+
+Если не требуется поддержка форматов jpeg и/или png, можно вместо шагов 2-4, 6
+собирать проект, добавив дефайны NOJPEG и/или NOPNG и убрав соотвествущие флаги из LFLAGS
