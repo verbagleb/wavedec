@@ -1652,7 +1652,8 @@ double decTree::getSubEnergy(decTree *pA, component comp, bool bShift)
 		sum += val*val;
 	}
 
-	return sum/iSize;
+	//return sum/iSize;
+	return sum;
 }
 
 int decTree::getAllEnergy(double * dest, decTree *pA, component comp, int bandnum, bool bShift)

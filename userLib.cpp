@@ -219,13 +219,15 @@ unsigned int * distribution(short * array, int size)
 	// cout << low << " " << high << endl;
 
 	count0 = new unsigned int[high - low + 1];
+	if (!count0)
+		return nullptr;
 	memset(count0, 0, (high-low+1)*sizeof(unsigned int));
 	count = count0 - low;
 
 	for (int i=0; i<size; i++)
 		count[array[i]]++;
 	
-	return count;
+	return count0;
 }
 
 double entropy(short * array, int size)
@@ -547,7 +549,7 @@ int formFile(FILE *& fd, char * name, int totalBands, char ** band_names, int pa
 
 	if (!bExists)
 	{
-		fprintf(fd, "%25s","Image");
+		fprintf(fd, "%33s","Image       ");
 		if (pause)
 			fprintf(fd, "\t%*s",pause, "Q. step");
 		for (int i = 0; i < totalBands; i++)

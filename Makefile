@@ -1,5 +1,5 @@
 #Linux: linux 	#Windows: win64/win32
-PLATFORM=win64
+PLATFORM=linux
 #Linux: w64/w32
 BUILD_PLATFORM=w64
 
@@ -9,6 +9,7 @@ FLAGS= -O3 -fdiagnostics-color=always \
       -DBAND_IMAGE_OUTPUT \
       -DRESTORED_IMAGE_OUTPUT \
 	  -DOUT_BMP \
+	  -DBAND_FILE \
       # \
 	  -DPRINT_SEPARATE_BANDS \
 	  -DOUT_JPEG \

@@ -49,6 +49,12 @@ int bAllowSkipPred, bSplit, bFiltering, bAbsDivision;
 //bool bSkipFlags = true;
 bool bContext = false;		// defines whether the entropy uses context
 
+// energy output
+bool bRms = false;
+bool bMs = false;
+bool bNormedLL = false;
+bool bComposed = true;
+
 int main(
 	int argc,      // Number of strings in array argv
 	char *argv[]
@@ -269,15 +275,12 @@ int main(
 		int maxlen = getMaxLength(band_names, totalBands);
 
 		// Formation of all log outputs
-		if (formOutput(output_dir_name, log_general, log_energy, log_entropy, log_psnr,
+		if (formOutput(output_dir_name, 
+					log_general, log_energy, log_entropy, log_psnr, log_distribution,
 					totalBands, band_names))
 			RETURN(10);
 
-		// Memory liberation
-		for (int i = 0; i < totalBands; i++)
-			delete[] band_names[i];
-		delete[] band_names;
-
+		// Cycle
 		for (int qs_index = 0; qs_index < qs_number; qs_index++)
 		{
 			double quantStep = qs_array[qs_index];
@@ -292,24 +295,53 @@ int main(
 				{
 					component comp = (component) compnum;
 					double energy_original = decTree::getSubEnergy(pDecTree_original, comp);
-
-					fprintf(log_energy[compnum], "%19s (rms)", image_name);
 					decTree::getAllEnergy(energy, pDecTree, comp);
-					double sum_sqrt = 0, sum = 0;
-					for (int i=0; i<totalBands; i++)
+
+					const char * image_name_to_print = image_name;
+					const char nothing[] = "";
+
+					if (bRms)
 					{
-						sum_sqrt += sqrt(energy[i]/energy_original);
-						fprintf(log_energy[compnum], "\t%*.5f", 
-								maxlen, sqrt(energy[i]/energy_original));
+						fprintf(log_energy[compnum], "%21s (rms: i/Or)", image_name_to_print);
+						for (int i=0; i<totalBands; i++)
+							fprintf(log_energy[compnum], "\t%*.5f", 
+									maxlen, sqrt(energy[i]/energy_original));
+						image_name_to_print = nothing;
+						fprintf(log_energy[compnum], "\n");
 					}
-					fprintf(log_energy[compnum], "\n%20s (ms)","");
-					for (int i=0; i<totalBands; i++)
+
+					if (bMs)
 					{
-						sum += (energy[i]/energy_original);
-						fprintf(log_energy[compnum], "\t%*.5f", 
-								maxlen, energy[i]/energy_original);
+						fprintf(log_energy[compnum], "%22s (ms: i/Or)",image_name_to_print);
+						for (int i=0; i<totalBands; i++)
+							fprintf(log_energy[compnum], "\t%*.5f", 
+									maxlen, energy[i]/energy_original);
+						fprintf(log_energy[compnum], "\n");
+						image_name_to_print = nothing;
 					}
-					fprintf(log_energy[compnum], "\n");
+
+					if (bNormedLL)
+					{
+						fprintf(log_energy[compnum], "%21s (rms: i/LL)",image_name_to_print);
+						for (int i=0; i<totalBands; i++)
+							fprintf(log_energy[compnum], "\t%*.5f", 
+									maxlen, sqrt(energy[i]/energy[0]));
+						fprintf(log_energy[compnum], "\n");
+						image_name_to_print = nothing;
+					}
+
+					if (bComposed)
+					{
+						fprintf(log_energy[compnum], "%15s (rms: LL/Or i/LL)",image_name_to_print);
+						fprintf(log_energy[compnum], "\t%*.5f", 
+								maxlen, sqrt(energy[0]/energy_original));
+						for (int i=1; i<totalBands; i++)
+							fprintf(log_energy[compnum], "\t%*.5f", 
+									maxlen, sqrt(energy[i]/energy[0]));
+						fprintf(log_energy[compnum], "\n");
+						image_name_to_print = nothing;
+					}
+
 					fclose(log_energy[compnum]);
 				}
 				delete[] energy;
@@ -344,6 +376,19 @@ int main(
 				// Storing with dequantization
 				pDecTree_recon->setAllCoefs(coeff_orig, extension, comp, 2);
 
+#ifdef BAND_FILE
+				char fd_bands_name[128], bands_dir[128];
+				sprintf(bands_dir, "%s/files", output_dir_name);
+				i = MKDIR(bands_dir, 0777);
+				if (i && errno!=EEXIST)
+					error(24, errno, "Bands directory");
+
+				sprintf(fd_bands_name, "%s/bands_%s_%s_%f.dat", bands_dir, comp_name[compnum], image_name, quantStep);
+				FILE * fd_bands = fopen(fd_bands_name, "wb");
+				if (!fd_bands)
+					RETURN(153);
+#endif
+
 				double ent0s, ent0_sum = 0;
 				for (int i=0; i<totalBands; i++)
 				{
@@ -353,11 +398,24 @@ int main(
 					else
 						ent0s = entropy(coeff_orig[i], size)*size;
 					ent0_sum += ent0s;
+
 #ifdef PRINT_SEPARATE_BANDS
 					sprintf(str_buffer[compnum]+strlen(str_buffer[compnum]), "\t%*.f", 
 							maxlen, ent0s);
 #endif
+
+#ifdef BAND_FILE
+					//fwrite(&i, sizeof(i), 1, fd_bands);
+					fwrite(&sub_width[i], sizeof(sub_width[i]), 1, fd_bands);
+					fwrite(&sub_height[i], sizeof(sub_height[i]), 1, fd_bands);
+					fwrite(coeff_orig[i], sizeof(short), sub_width[i]*sub_height[i], fd_bands);
+#endif
 				}
+
+#ifdef BAND_FILE
+				fclose(fd_bands);
+#endif
+
 				fprintf(log_general[0],"\t%10.f", ent0_sum);
 
 				delete[] sub_width;
@@ -420,7 +478,7 @@ int main(
 			{
 				component comp = (component) compnum;
 				double psnr = decTree::getSubPSNR(pDecTree_original, pDecTree_recon, comp);
-				fprintf(log_general[0], "\t%.3f", psnr);
+				fprintf(log_general[0], "\t%10.3f", psnr);
 			}
 			fprintf(log_general[0],"\n");
 
@@ -507,6 +565,11 @@ int main(
 
 			delete pDecTree_recon;
 		}
+
+		// Memory liberation
+		for (int i = 0; i < totalBands; i++)
+			delete[] band_names[i];
+		delete[] band_names;
 
 		for (int k=0; k<1; k++)
 			fclose(log_general[k]);

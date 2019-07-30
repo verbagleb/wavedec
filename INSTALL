@@ -7,6 +7,7 @@
 -DBAND_IMAGE_OUTPUT - выводить изображение разложения (output/output_N/bands)
 -DRESTORED_OUTPUT - выводить восстановленное изображение (output/output_N/restored) и разницу с исходным (output/output_N/difference_xK)
 -DPRINT_SEPARATE_BANDS - выводить энтропию и psnr по каждой зоне (файлы entropy_X.txt, psnr_X.txt)
+-DBAND_FILE - выводить результат преобразования в битовые файлы, один файл на изображение и шаг квантования (output/output_N/files)
 -DOUT_BMP - вывод восстановленных изображений в формате bmp
 -DOUT_JPEG - -/-/- в формате JPEG
 -DOUT_PNG - -/-/- в формате PNG
