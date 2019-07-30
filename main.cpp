@@ -276,7 +276,7 @@ int main(
 
 		// Formation of all log outputs
 		if (formOutput(output_dir_name, 
-					log_general, log_energy, log_entropy, log_psnr, log_distribution,
+					log_general, log_energy, log_entropy, log_psnr,
 					totalBands, band_names))
 			RETURN(10);
 
