@@ -1088,6 +1088,57 @@ double * decTree::sparse(component comp, bool byW, bool bOdd, int iNumBands, int
 }
 
 
+_OUT_TYPE_ * decTree::getSubCoef_type(component comp, int filenum, int * sub_width, int * sub_height)
+{
+	if (isEmpty())
+		return nullptr;
+
+	char * char_comp;
+	int iWidth, iHeight;
+	double * dBand;
+
+	switch (comp) {
+	case Cr:
+		char_comp = (char*)"Cr";
+		iHeight = iHeightC;
+		iWidth = iWidthC;
+		dBand = dBandCr;
+		break;
+	case Cb:
+		char_comp = (char*)"Cb";
+		iHeight = iHeightC;
+		iWidth = iWidthC;
+		dBand = dBandCb;
+		break;
+	case 0:
+	default:
+		char_comp = (char*)"Y";
+		iHeight = iHeightY;
+		iWidth = iWidthY;
+		dBand = dBandY;
+		break;
+	}
+
+	*sub_width = iWidth;
+	*sub_height = iHeight;
+
+	_OUT_TYPE_ *subCoeff = new _OUT_TYPE_[iHeight*iWidth];
+	if (!subCoeff)
+		return nullptr;
+	memset(subCoeff, 0, iHeight*iWidth * sizeof(_OUT_TYPE_));
+
+	for (int j = 0; j < iHeight; j++) {
+		for (int i = 0; i < iWidth; i++) 
+		{
+			double d=dBand[i+j*iWidth];
+			subCoeff[i + j * iWidth] = (_OUT_TYPE_) dBand[i + j * iWidth];
+		}
+	}
+
+	return subCoeff;
+}
+
+
 short * decTree::getSubCoef(double extension, component comp, int filenum, int * sub_width, int * sub_height)
 {
 	if (isEmpty())
@@ -1179,6 +1230,33 @@ int decTree::countBands()
 
 	return ret;
 }
+
+//Places array pointers to coeffs for component comp into bandnum point of array dest. 
+int decTree::getAllCoefs_type(_OUT_TYPE_ ** dest, int * sub_width, int * sub_height, component comp, int bandnum)
+{
+	
+	if (isEmpty())
+		return 0;
+
+	if (isUndivided())
+	{
+		dest[bandnum]=getSubCoef_type(comp, bandnum, &sub_width[bandnum], &sub_height[bandnum]);
+		return 1;
+	}
+
+	int ret = 0;
+	for (int i=0; i<iNumW; i++)
+		for (int j=0; j<iNumH; j++)
+		{
+			int f = stepAt(i,j)->getAllCoefs_type(dest, sub_width, sub_height, comp, bandnum);
+			if (!f)
+				return 0; //some band was empty
+			ret += f;
+			bandnum += f;
+		}
+	return ret;
+}
+
 
 //Places array pointers to coeffs for component comp into bandnum point of array dest. 
 //Quantisation for non-LL bands is set by extension.

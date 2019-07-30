@@ -280,6 +280,51 @@ int main(
 					totalBands, band_names))
 			RETURN(10);
 
+#ifdef BAND_FILE
+		// Direct coefficient output
+		char fd_bands_name[128], bands_dir[128];
+		sprintf(bands_dir, "%s/files", output_dir_name);
+		i = MKDIR(bands_dir, 0777);
+		if (i && errno!=EEXIST)
+			error(24, errno, "Bands directory");
+
+		for (int compnum = 0; compnum < 3; compnum++)
+		{
+			component comp = (component) compnum;
+			sprintf(fd_bands_name, "%s/bands_%s_%s.dat", bands_dir, comp_name[compnum], image_name);
+			FILE * fd_bands = fopen(fd_bands_name, "wb");
+			if (!fd_bands)
+				RETURN(153);
+
+
+			// Extracting the coeffs without quanization
+			_OUT_TYPE_ ** coeff_float = new _OUT_TYPE_ *[totalBands];
+			int * sub_width = new int [totalBands];
+			int * sub_height = new int [totalBands];
+			if (!coeff_float || !sub_width || !sub_height)
+				RETURN(14);
+
+			int f = pDecTree->getAllCoefs_type(coeff_float, sub_width, sub_height, comp);
+			if (!f || f!=totalBands)
+				RETURN(15);
+
+
+			for (int i=0; i<totalBands; i++)
+			{
+				fwrite(&sub_width[i], sizeof(sub_width[i]), 1, fd_bands);
+				fwrite(&sub_height[i], sizeof(sub_height[i]), 1, fd_bands);
+				fwrite(coeff_float[i], sizeof(_OUT_TYPE_), sub_width[i]*sub_height[i], fd_bands);
+			}
+
+			delete[] coeff_float;
+			delete[] sub_width;
+			delete[] sub_height;
+
+			fclose(fd_bands);
+		}
+
+#endif
+
 		// Cycle
 		for (int qs_index = 0; qs_index < qs_number; qs_index++)
 		{
@@ -376,19 +421,6 @@ int main(
 				// Storing with dequantization
 				pDecTree_recon->setAllCoefs(coeff_orig, extension, comp, 2);
 
-#ifdef BAND_FILE
-				char fd_bands_name[128], bands_dir[128];
-				sprintf(bands_dir, "%s/files", output_dir_name);
-				i = MKDIR(bands_dir, 0777);
-				if (i && errno!=EEXIST)
-					error(24, errno, "Bands directory");
-
-				sprintf(fd_bands_name, "%s/bands_%s_%s_%f.dat", bands_dir, comp_name[compnum], image_name, quantStep);
-				FILE * fd_bands = fopen(fd_bands_name, "wb");
-				if (!fd_bands)
-					RETURN(153);
-#endif
-
 				double ent0s, ent0_sum = 0;
 				for (int i=0; i<totalBands; i++)
 				{
@@ -404,17 +436,7 @@ int main(
 							maxlen, ent0s);
 #endif
 
-#ifdef BAND_FILE
-					//fwrite(&i, sizeof(i), 1, fd_bands);
-					fwrite(&sub_width[i], sizeof(sub_width[i]), 1, fd_bands);
-					fwrite(&sub_height[i], sizeof(sub_height[i]), 1, fd_bands);
-					fwrite(coeff_orig[i], sizeof(short), sub_width[i]*sub_height[i], fd_bands);
-#endif
 				}
-
-#ifdef BAND_FILE
-				fclose(fd_bands);
-#endif
 
 				fprintf(log_general[0],"\t%10.f", ent0_sum);
 

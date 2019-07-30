@@ -8,6 +8,9 @@
 #include "cFilter.h"
 #include "math.h"
 
+// Type for direct band output
+#define _OUT_TYPE_ float
+
 class decTree
 {
 public:
@@ -30,8 +33,10 @@ public:
 	double * sparse(component comp, bool byW, bool bOdd, int iNumBands, int iShift);
 	int synthesizeBand();
 
+	_OUT_TYPE_ * getSubCoef_type(component comp, int filenum, int * sub_width, int * sub_height); 
 	short * getSubCoef(double extension, component comp, int filenum, int * sub_width, int * sub_height); 
 	int countBands();
+	int getAllCoefs_type(_OUT_TYPE_ ** dest, int * sub_width, int * sub_height, component comp, int bandnum=0);
 	int getAllCoefs(short ** dest, int * sub_width, int * sub_height, double extension, component comp, int bandnum=0);
 	void copyStructure(decTree * dest);
 	void copyData(decTree * dest);

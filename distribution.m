@@ -1,11 +1,12 @@
 in_dir = 'output/output_last/files/';
 out_dir = 'output/output_last/distributions/';
+TYPE = 'float';
+
 comp = 'Y';
 image = 'kiel.bmp';
-qs = 0.03;
 bands=1:3;  % numerating from 0
 
-fname = [in_dir 'bands_' comp '_'  image '_' sprintf('%8f',qs) '.dat'];
+fname = [in_dir 'bands_' comp '_'  image '.dat'];
 fd = fopen(fname, 'rb');
 assert(fd~=-1);
 
@@ -16,7 +17,7 @@ right_common = +Inf;
 for i=1:max(bands)+1
     wh = fread(fd, 2, 'int');
     size = prod(wh);
-    data = fread(fd, size, 'short');
+    data = fread(fd, size, TYPE);
     if any((bands+1)==i)
 %         ksdensity(data,linspace(min(data),max(data),1000));
         left = quantile(data,0.01);
@@ -32,5 +33,6 @@ legend(num2str(bands.'));
 % set(gcf,'Position', [200 200 1025 650]);
 fclose(fd);
 
-foutname = [out_dir 'distr_' comp '_'  image '_' sprintf('%8f',qs) '.bmp'];
+mkdir(out_dir);
+foutname = [out_dir 'distr_' comp '_'  image '.bmp'];
 saveas(gcf,foutname);
