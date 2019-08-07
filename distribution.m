@@ -6,6 +6,8 @@ comp = 'Y';
 image = 'kiel.bmp';
 bands=1:3;  % numerating from 0
 
+band_names =  ["LL" "LH" "HL" "HH"];    % TODO: create name output
+
 fname = [in_dir 'bands_' comp '_'  image '.dat'];
 fd = fopen(fname, 'rb');
 assert(fd~=-1);
@@ -24,12 +26,15 @@ for i=1:max(bands)+1
         right = quantile(data,0.99);
         left_common = max(left_common, left);
         right_common = min(right_common, right);
-        ksdensity(data,linspace(left,right,1000), 'bandwidth',[]);
+        [f, xi] = ksdensity(data,linspace(left,right,1000), 'bandwidth',[]);
+        f0 = ksdensity(data,0, 'bandwidth',[]);
+        plot(xi, f/f0);
     end
 end
 
 xlim([left_common, right_common]);
-legend(num2str(bands.'));
+% legend(num2str(bands.'));
+legend(band_names(bands+1));
 % set(gcf,'Position', [200 200 1025 650]);
 fclose(fd);
 
